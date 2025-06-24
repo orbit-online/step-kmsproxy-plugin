@@ -21,16 +21,25 @@ workstations).
 1. Create a config dir for KMS proxy: `mkdir -p ~/.config/kmsproxy`
 1. Create a proxy certificate authority and install it into the system trust store.
    ```
-   step certificate create --profile root-ca --no-password --insecure 'Local Smallstep Proxy' ~/.config/kmsproxy/ca.crt ~/.config/kmsproxy/ca.key
-   sudo cp ~/.config/kmsproxy/ca.crt /usr/local/share/ca-certificates/smallstep-proxy.crt
-   sudo dpkg-reconfigure ca-certificates
+   step certificate create --profile root-ca --no-password --insecure 'Local Smallstep KMS Proxy' ~/.config/kmsproxy/ca.crt ~/.config/kmsproxy/ca.key
+   sudo cp ~/.config/kmsproxy/ca.crt /usr/local/share/ca-certificates/step-kmsproxy.crt
+   sudo update-ca-certificates
    ```
 1. Create a [`ProxyAutoConfiguration.js`](examples/ProxyAutoConfiguration.js)
    file in `~/.config/kmsproxy/ProxyAutoConfiguration.js` that tells the OS &
    browsers which domains to proxy.
 1. Setup a [user SystemD service](examples/kmsproxy.service) that starts the KMS proxy
 1. Change your OS proxy settings to "Automatic" and set the "Configuration URL"
-   to `https://localhost:8091/ProxyAutoConfiguration.js`:  
+   to `https://localhost:8091/ProxyAutoConfiguration.js`.  
+   Via the terminal:
+   ```
+   dconf load /system/proxy/ <<'EOF'
+   [/]
+   mode='auto'
+   autoconfig-url='https://localhost:8091/ProxyAutoConfiguration.js'
+   EOF
+   ```
+   Or Gnome Control Center:  
    ![[Proxy configuration in Ubuntu]](examples/ubuntu-proxy-settings.png?raw=true)
 
 ## Usage
