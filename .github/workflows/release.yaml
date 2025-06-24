@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Compile & upload release binaries
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - uses: docker/setup-buildx-action@v3
+    - id: program_version
+      uses: orbit-online/program-version@v1
+    - name: Cache xgo-cache
+      uses: actions/cache@v4
+      with:
+        path: /home/runner/.xgo-cache
+        key: xgo-cache
+    - name: Install techknowlogick/xgo
+      run: go install src.techknowlogick.com/xgo@v1.8.0+1.23.2
+    - name: Install build deps
+      run: sudo apt-get install --no-install-recommends libpcsclite-dev
+    - name: Build step-plugin-kmsproxy
+      run: |
+        mkdir -p release/github.com/orbit-online/
+        for arch in amd64 arm64 386; do
+          GOARCH=$arch go build --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }}" -o release/github.com/orbit-online/step-plugin-kmsproxy-linux-${arch}
+        done
+        xgo --dest release --targets=windows/amd64,windows/386,darwin/arm64,darwin/amd64,darwin/386 --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }}" .
+        docker buildx build --output type=tar --build-arg VERSION=${{ steps.program_version.outputs.version }} --platform linux/amd64 --file .github/assets/alpine-build.Dockerfile . | tar -xO step-plugin-kmsproxy >release/github.com/orbit-online/step-plugin-kmsproxy-alpine-amd64
+        docker buildx build --output type=tar --build-arg VERSION=${{ steps.program_version.outputs.version }} --platform linux/arm64 --file .github/assets/alpine-build.Dockerfile . | tar -xO step-plugin-kmsproxy >release/github.com/orbit-online/step-plugin-kmsproxy-alpine-arm64
+        chmod +x release/github.com/orbit-online/step-plugin-kmsproxy-alpine-amd64 release/github.com/orbit-online/step-plugin-kmsproxy-alpine-arm64
+    - id: release
+      uses: orbit-online/git-release@v1
+    - uses: ncipollo/release-action@v1
+      with:
+        name: ${{ steps.program_version.outputs.version }}
+        body: ${{ steps.release.outputs.message }}
+        draft: false
+        prerelease: false
+        artifacts: release/github.com/orbit-online/*
+        artifactErrorsFailBuild: true
+        artifactContentType: application/octet-stream
