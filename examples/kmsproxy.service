@@ -11,8 +11,8 @@ WantedBy=default.target
 Type=simple
 StandardError=journal
 ExecStart=%h/.local/bin/step-plugin-kmsproxy \
-  --cert %h/.config/kmsproxy/ca.crt \
-  --key %h/.config/kmsproxy/ca.key \
   --cacert %h/.config/kmsproxy/kube-cluster.crt \
   --pac %h/.config/kmsproxy/ProxyAutoConfiguration.js \
-  tpmkms:name=mykey
+  tpmkms:name=mykey \
+  %h/.config/kmsproxy/ca.crt \
+  %h/.config/kmsproxy/ca.key
