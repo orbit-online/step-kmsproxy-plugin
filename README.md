@@ -1,6 +1,6 @@
-# step-plugin-kmsproxy
+# step-kmsproxy-plugin
 
-step-plugin-kmsproxy is an authenticating proxy for mTLS services.  
+step-kmsproxy-plugin is an authenticating proxy for mTLS services.  
 Think of it like a simple version of [envoy](https://github.com/envoyproxy/envoy),
 except keys and certificates are loaded from [Smallstep KMS](https://github.com/smallstep/step-kms-plugin),
 which supports numerous HSM backings like YubiKeys, AWS KMS, and TPM 2.0.
@@ -57,7 +57,7 @@ You can use KMS proxy for authenticating with Kubernetes:
    ```
 1. Tell KMS proxy to trust the certificate:
    ```
-   ExecStart=%h/.local/bin/step-plugin-kmsproxy ... --cacert %h/.config/kmsproxy/<CLUSTER-NAME>.crt tpmkms:name=mykey
+   ExecStart=%h/.local/bin/step-kmsproxy-plugin ... --cacert %h/.config/kmsproxy/<CLUSTER-NAME>.crt tpmkms:name=mykey
    ```
 1. Change your kubeconfig to use KMS proxy:
    ```

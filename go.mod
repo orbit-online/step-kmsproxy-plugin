@@ -1,4 +1,4 @@
-module github.com/orbit-online/step-plugin-kmsproxy
+module github.com/orbit-online/step-kmsproxy-plugin
 
 go 1.23.6
 

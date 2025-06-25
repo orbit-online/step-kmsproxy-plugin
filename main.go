@@ -17,7 +17,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/elazarl/goproxy"
-	"github.com/orbit-online/step-plugin-kmsproxy/listeners"
+	"github.com/orbit-online/step-kmsproxy-plugin/listeners"
 	stepCLI "github.com/smallstep/cli-utils/step"
 	stepKey "go.step.sm/crypto/keyutil"
 	stepKMS "go.step.sm/crypto/kms"
@@ -52,7 +52,7 @@ type Params struct {
 var params Params
 
 func main() {
-	kong.Parse(&params, kong.Name("step-plugin-kmsproxy"), kong.Description("Use smallstep to create mTLS tunnels"))
+	kong.Parse(&params, kong.Name("step-kmsproxy-plugin"), kong.Description("Use smallstep to create mTLS tunnels"))
 	err := startProxy(context.Background(), params)
 	if err != nil {
 		log.Fatal(err)

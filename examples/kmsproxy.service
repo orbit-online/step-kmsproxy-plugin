@@ -10,7 +10,7 @@ WantedBy=default.target
 [Service]
 Type=simple
 StandardError=journal
-ExecStart=%h/.local/bin/step-plugin-kmsproxy \
+ExecStart=%h/.local/bin/step-kmsproxy-plugin \
   --cacert %h/.config/kmsproxy/kube-cluster.crt \
   --pac %h/.config/kmsproxy/ProxyAutoConfiguration.js \
   tpmkms:name=mykey \
