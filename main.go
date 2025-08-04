@@ -41,6 +41,7 @@ type Params struct {
 	KMSURI             string   `required:"" arg:"" name:"kmsuri" help:"Smallstep KMS key URI to use for mTLS connections"`
 	Cert               string   `required:"" arg:"" name:"cert" help:"Path to CA certificate trusted by proxy clients." type:"path"`
 	Key                string   `required:"" arg:"" name:"key" help:"Path to key matching the CA certificate" type:"path"`
+	ClientCert         *string  `name:"clientcert" help:"Path to client certificate matching the key at <kmsuri> (defaults to using <kmsuri>)"`
 	CACerts            []string `name:"cacert" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
 	Listen             string   `help:"Listening address (unix:<PATH>, tcp:<HOSTNAME>:<PORT>, or systemd:)" default:"tcp:localhost:8090"`
 	PACPort            int      `help:"Localhost port for serving AutoProxyConfiguration.js" type:"int" default:"8091"`
@@ -92,7 +93,7 @@ func startProxy(ctx context.Context, params Params) error {
 	if err != nil {
 		return err
 	}
-	proxy, err := createProxy(ctx, params.KMSURI, caCert, params.CACerts, params.InsecureSkipVerify, params.Verbose)
+	proxy, err := createProxy(ctx, params.KMSURI, params.ClientCert, caCert, params.CACerts, params.InsecureSkipVerify, params.Verbose)
 	if err != nil {
 		return err
 	}
@@ -101,7 +102,7 @@ func startProxy(ctx context.Context, params Params) error {
 
 	fmt.Println("Startup completed")
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	_ = <-c
 	return err
 }
@@ -109,6 +110,7 @@ func startProxy(ctx context.Context, params Params) error {
 func createProxy(
 	ctx context.Context,
 	kmsUri string,
+	clientCertPath *string,
 	caCert *tls.Certificate,
 	caBundlePaths []string,
 	insecureSkipVerify bool,
@@ -130,7 +132,7 @@ func createProxy(
 	}
 
 	// Test loading
-	_, err = loadClientCert(ctx, params.KMSURI)
+	_, err = loadClientCert(ctx, kmsUri, clientCertPath)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to load client certificate: %w", err)
 	}
@@ -147,7 +149,7 @@ func createProxy(
 	proxy.OnRequest().DoFunc(func(req *http.Request, proxyCtx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		proxyCtx.Proxy.Tr.TLSClientConfig = &tls.Config{
 			GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-				return loadClientCert(ctx, kmsUri)
+				return loadClientCert(ctx, kmsUri, clientCertPath)
 			},
 			Renegotiation:      tls.RenegotiateFreelyAsClient,
 			RootCAs:            caCertPool,
@@ -195,7 +197,7 @@ func signCertificateForHost(caCert *tls.Certificate, host string) (*tls.Certific
 	}, nil
 }
 
-func loadClientCert(ctx context.Context, kuri string) (*tls.Certificate, error) {
+func loadClientCert(ctx context.Context, kuri string, clientCertPath *string) (*tls.Certificate, error) {
 	km, err := openKMS(ctx, kuri)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to open KMS using URI %s: %w", kuri, err)
@@ -205,14 +207,28 @@ func loadClientCert(ctx context.Context, kuri string) (*tls.Certificate, error) 
 		return nil, fmt.Errorf("Unable to load certificates from KMS: %s", km)
 	}
 	var clientCerts [][]byte
-	certs, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
-		Name: kuri,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load certificates from KMS URI %s: %w", kuri, err)
-	}
-	for _, c := range certs {
-		clientCerts = append(clientCerts, c.Raw)
+	if clientCertPath == nil {
+		certs, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
+			Name: kuri,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("Failed to load certificates from KMS URI %s: %w", kuri, err)
+		}
+		for _, c := range certs {
+			clientCerts = append(clientCerts, c.Raw)
+		}
+	} else {
+		rawBundle, err := os.ReadFile(*clientCertPath)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read client cert at %s: %w", *clientCertPath, err)
+		}
+		clientCertsParsed, err := x509.ParseCertificates(rawBundle)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse client certificate bundle in %s: %w", *clientCertPath, err)
+		}
+		for _, c := range clientCertsParsed {
+			clientCerts = append(clientCerts, c.Raw)
+		}
 	}
 	key, err := km.CreateSigner(&stepKMSAPI.CreateSignerRequest{
 		SigningKey: kuri,
