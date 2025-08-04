@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"net/http"
@@ -206,29 +207,35 @@ func loadClientCert(ctx context.Context, kuri string, clientCertPath *string) (*
 	if !ok {
 		return nil, fmt.Errorf("Unable to load certificates from KMS: %s", km)
 	}
-	var clientCerts [][]byte
+	var rawClientCerts [][]byte
 	if clientCertPath == nil {
-		certs, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
+		clientCert, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
 			Name: kuri,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load certificates from KMS URI %s: %w", kuri, err)
 		}
-		for _, c := range certs {
-			clientCerts = append(clientCerts, c.Raw)
+		for _, c := range clientCert {
+			rawClientCerts = append(rawClientCerts, c.Raw)
 		}
 	} else {
 		rawBundle, err := os.ReadFile(*clientCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read client cert at %s: %w", *clientCertPath, err)
 		}
-		clientCertsParsed, err := x509.ParseCertificates(rawBundle)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse client certificate bundle in %s: %w", *clientCertPath, err)
+		// https://gist.github.com/laher/5795578
+		var clientCert tls.Certificate
+		var clientCertPart *pem.Block
+		for {
+			clientCertPart, rawBundle = pem.Decode(rawBundle)
+			if clientCertPart == nil {
+				break
+			}
+			if clientCertPart.Type == "CERTIFICATE" {
+				clientCert.Certificate = append(clientCert.Certificate, clientCertPart.Bytes)
+			}
 		}
-		for _, c := range clientCertsParsed {
-			clientCerts = append(clientCerts, c.Raw)
-		}
+		rawClientCerts = clientCert.Certificate
 	}
 	key, err := km.CreateSigner(&stepKMSAPI.CreateSignerRequest{
 		SigningKey: kuri,
@@ -237,7 +244,7 @@ func loadClientCert(ctx context.Context, kuri string, clientCertPath *string) (*
 		return nil, fmt.Errorf("Failed to load private key using KMS URI %s: %w", kuri, err)
 	}
 	return &tls.Certificate{
-		Certificate: clientCerts,
+		Certificate: rawClientCerts,
 		PrivateKey:  key,
 	}, nil
 }
