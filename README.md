@@ -70,7 +70,7 @@ You can use KMS proxy for authenticating with Kubernetes:
 
 ### curl
 
-`curl` doesn't integrate with the OS proxy settings and does not support
-reading `ProxyAutoConfiguration.js`, so you will need to the `--proxy` switch
-or an [`http_proxy`](https://everything.curl.dev/usingcurl/proxies/env.html)
+`curl` doesn't integrate with the OS proxy settings and does not support reading
+`ProxyAutoConfiguration.js`, so you will need to use the `--proxy` switch or an
+[`http_proxy`](https://everything.curl.dev/usingcurl/proxies/env.html)
 environment variable.
