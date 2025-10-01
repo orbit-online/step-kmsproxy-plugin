@@ -5,9 +5,10 @@ go 1.23.6
 toolchain go1.23.7
 
 require (
+	github.com/alecthomas/kong v1.11.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/elazarl/goproxy v1.7.2
 	github.com/smallstep/cli-utils v0.12.1
-	github.com/spf13/cobra v1.9.1
 	go.step.sm/crypto v0.59.1
 )
 
@@ -31,7 +32,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/ThalesIgnite/crypto11 v1.2.5 // indirect
-	github.com/alecthomas/kong v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59 // indirect
@@ -48,7 +48,6 @@ require (
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.6 // indirect
-	github.com/elazarl/goproxy v1.7.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -65,7 +64,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
-	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/miekg/pkcs11 v1.0.3 // indirect
@@ -79,7 +77,6 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/smallstep/go-attestation v0.4.4-0.20240109183208-413678f90935 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
@@ -102,3 +99,5 @@ require (
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 )
+
+replace github.com/elazarl/goproxy v1.7.2 => github.com/orbit-online/goproxy v0.0.0-20251002081532-c6fbdf3a01af

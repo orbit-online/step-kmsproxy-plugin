@@ -39,11 +39,11 @@ import (
 )
 
 type Params struct {
-	KMSURI             string   `required:"" arg:"" name:"kmsuri" help:"Smallstep KMS key URI to use for mTLS connections"`
-	Cert               string   `required:"" arg:"" name:"cert" help:"Path to CA certificate trusted by proxy clients." type:"path"`
-	Key                string   `required:"" arg:"" name:"key" help:"Path to key matching the CA certificate" type:"path"`
-	ClientCert         *string  `name:"clientcert" help:"Path to client certificate matching the key at <kmsuri> (defaults to using <kmsuri>)"`
-	CACerts            []string `name:"cacert" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
+	ClientKey          string   `required:"" arg:"" name:"clientkey" help:"Filesystem path or Smallstep KMS key URI to use for mTLS connections"`
+	CAKey              string   `required:"" arg:"" name:"cakey" help:"Filesystem path or Smallstep KMS key URI used for creating certificates trusted by proxy clients"`
+	ClientCert         *string  `name:"clientcert" help:"Path to client certificate matching the key at <clientkey> (defaults to using <clientkey>)"`
+	CACert             *string  `name:"cacert" help:"Path to CA certificate matching the key at <cakey> (defaults to using <cakey>)"`
+	Trust              []string `name:"trust" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
 	Listen             string   `help:"Listening address (unix:<PATH>, tcp:<HOSTNAME>:<PORT>, or systemd:)" default:"tcp:localhost:8090"`
 	PACPort            int      `help:"Localhost port for serving AutoProxyConfiguration.js" type:"int" default:"8091"`
 	PAC                *string  `help:"Path to AutoProxyConfiguration.js" type:"path"`
@@ -62,7 +62,7 @@ func main() {
 }
 
 func startProxy(ctx context.Context, params Params) error {
-	caCert, err := loadCACert(params.Cert, params.Key)
+	caCert, err := loadKeyCert(ctx, params.CAKey, params.CACert)
 	if err != nil {
 		return err
 	}
@@ -88,13 +88,13 @@ func startProxy(ctx context.Context, params Params) error {
 
 	proxyProto, proxyAddr, found := strings.Cut(params.Listen, ":")
 	if !found {
-		return fmt.Errorf("Unable to determine listening method in --listen option, expected <PROTO>:<ADDR>, got %s", params.Listen)
+		return fmt.Errorf("unable to determine listening method in --listen option, expected <PROTO>:<ADDR>, got %s", params.Listen)
 	}
 	proxyListener, err := listeners.CreateListener(proxyProto, proxyAddr)
 	if err != nil {
 		return err
 	}
-	proxy, err := createProxy(ctx, params.KMSURI, params.ClientCert, caCert, params.CACerts, params.InsecureSkipVerify, params.Verbose)
+	proxy, err := createProxy(ctx, params.ClientKey, params.ClientCert, caCert, params.Trust, params.InsecureSkipVerify, params.Verbose)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func startProxy(ctx context.Context, params Params) error {
 	fmt.Println("Startup completed")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	_ = <-c
+	<-c
 	return err
 }
 
@@ -117,31 +117,30 @@ func createProxy(
 	insecureSkipVerify bool,
 	verbose bool,
 ) (*http.Server, error) {
-	caCertPool, err := x509.SystemCertPool()
+	trustPool, err := x509.SystemCertPool()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to load system certificates: %w", err)
+		return nil, fmt.Errorf("unable to load system certificates: %w", err)
 	}
 	for _, caBundlePath := range caBundlePaths {
 		rawBundle, err := os.ReadFile(caBundlePath)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read CA bundle at %s: %w", caBundlePath, err)
+			return nil, fmt.Errorf("failed to read CA bundle at %s: %w", caBundlePath, err)
 		}
-		ok := caCertPool.AppendCertsFromPEM(rawBundle)
+		ok := trustPool.AppendCertsFromPEM(rawBundle)
 		if !ok {
-			return nil, fmt.Errorf("Failed to append %s to the certificate store", caBundlePath)
+			return nil, fmt.Errorf("failed to append %s to the certificate store", caBundlePath)
 		}
 	}
 
 	// Test loading
-	_, err = loadClientCert(ctx, kmsUri, clientCertPath)
+	_, err = loadKeyCert(ctx, kmsUri, clientCertPath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load client certificate: %w", err)
+		return nil, fmt.Errorf("failed to load client certificate: %w", err)
 	}
 
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = verbose
 	proxy.AllowHTTP2 = true
-
 	mitmAction := &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(caCert)}
 	var mitmHandler goproxy.FuncHttpsHandler = func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 		return mitmAction, host
@@ -150,27 +149,16 @@ func createProxy(
 	proxy.OnRequest().DoFunc(func(req *http.Request, proxyCtx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		proxyCtx.Proxy.Tr.TLSClientConfig = &tls.Config{
 			GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-				return loadClientCert(ctx, kmsUri, clientCertPath)
+				return loadKeyCert(ctx, kmsUri, clientCertPath)
 			},
 			Renegotiation:      tls.RenegotiateFreelyAsClient,
-			RootCAs:            caCertPool,
+			RootCAs:            trustPool,
 			InsecureSkipVerify: insecureSkipVerify,
 		}
 		return req, nil
 	})
 
 	return &http.Server{Handler: http.HandlerFunc(proxy.ServeHTTP)}, nil
-}
-
-func loadCACert(certPath string, keyPath string) (*tls.Certificate, error) {
-	caCert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse CA certificate & key in %s, %s: %w", certPath, keyPath, err)
-	}
-	if caCert.Leaf, err = x509.ParseCertificate(caCert.Certificate[0]); err != nil {
-		return nil, fmt.Errorf("Failed to parse CA certificate leaf in %s: %w", certPath, err)
-	}
-	return &caCert, nil
 }
 
 // Only used for the localhost PAC server signing, the proxy lib has its own function that is not exposed
@@ -198,55 +186,59 @@ func signCertificateForHost(caCert *tls.Certificate, host string) (*tls.Certific
 	}, nil
 }
 
-func loadClientCert(ctx context.Context, kuri string, clientCertPath *string) (*tls.Certificate, error) {
+func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certificate, error) {
 	km, err := openKMS(ctx, kuri)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to open KMS using URI %s: %w", kuri, err)
+		return nil, fmt.Errorf("unable to open KMS using URI %s: %w", kuri, err)
 	}
 	cm, ok := km.(stepKMSAPI.CertificateChainManager)
 	if !ok {
-		return nil, fmt.Errorf("Unable to load certificates from KMS: %s", km)
+		return nil, fmt.Errorf("unable to load certificates from KMS: %s", km)
 	}
-	var rawClientCerts [][]byte
-	if clientCertPath == nil {
-		clientCert, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
+	var rawCerts [][]byte
+	if certPath == nil {
+		cert, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
 			Name: kuri,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("Failed to load certificates from KMS URI %s: %w", kuri, err)
+			return nil, fmt.Errorf("failed to load certificates from KMS URI %s: %w", kuri, err)
 		}
-		for _, c := range clientCert {
-			rawClientCerts = append(rawClientCerts, c.Raw)
+		for _, c := range cert {
+			rawCerts = append(rawCerts, c.Raw)
 		}
 	} else {
-		rawBundle, err := os.ReadFile(*clientCertPath)
+		rawBundle, err := os.ReadFile(*certPath)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read client cert at %s: %w", *clientCertPath, err)
+			return nil, fmt.Errorf("failed to read client cert at %s: %w", *certPath, err)
 		}
 		// https://gist.github.com/laher/5795578
-		var clientCert tls.Certificate
-		var clientCertPart *pem.Block
+		var cert tls.Certificate
+		var certPart *pem.Block
 		for {
-			clientCertPart, rawBundle = pem.Decode(rawBundle)
-			if clientCertPart == nil {
+			certPart, rawBundle = pem.Decode(rawBundle)
+			if certPart == nil {
 				break
 			}
-			if clientCertPart.Type == "CERTIFICATE" {
-				clientCert.Certificate = append(clientCert.Certificate, clientCertPart.Bytes)
+			if certPart.Type == "CERTIFICATE" {
+				cert.Certificate = append(cert.Certificate, certPart.Bytes)
 			}
 		}
-		rawClientCerts = clientCert.Certificate
+		rawCerts = cert.Certificate
 	}
 	key, err := km.CreateSigner(&stepKMSAPI.CreateSignerRequest{
 		SigningKey: kuri,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load private key using KMS URI %s: %w", kuri, err)
+		return nil, fmt.Errorf("failed to load private key using KMS URI %s: %w", kuri, err)
 	}
-	return &tls.Certificate{
-		Certificate: rawClientCerts,
+	keyCert := &tls.Certificate{
+		Certificate: rawCerts,
 		PrivateKey:  key,
-	}, nil
+	}
+	if keyCert.Leaf, err = x509.ParseCertificate(keyCert.Certificate[0]); err != nil {
+		return nil, fmt.Errorf("failed to parse certificate leaf in %s: %w", *certPath, err)
+	}
+	return keyCert, nil
 }
 
 // Source: https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/cmd/root.go#L74-L94
