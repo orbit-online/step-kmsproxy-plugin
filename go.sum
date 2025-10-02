@@ -165,10 +165,6 @@ github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa1
 github.com/mitchellh/copystructure v1.2.0/go.mod h1:qLl+cE2AmVv+CoeAwDPye/v+N2HKCj9FbZEVFJRxO9s=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
-github.com/orbit-online/goproxy v0.0.0-20251002075153-862133a06828 h1:Ptbj5vqwDLU9TYa2MulMtL7YMf44NYnV4CKS60PnZo0=
-github.com/orbit-online/goproxy v0.0.0-20251002075153-862133a06828/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
-github.com/orbit-online/goproxy v0.0.0-20251002081532-c6fbdf3a01af h1:h+r3ASxF9STfC3zI33Tlo//HXtti+k9gr1UwCHIW5dg=
-github.com/orbit-online/goproxy v0.0.0-20251002081532-c6fbdf3a01af/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/orbit-online/goproxy v0.0.0-20251002085012-ee8c821eeb19 h1:1mfzFaOZENQiVD7YJBYY/OP4/uVjrWEMo6yc1WPslQA=
 github.com/orbit-online/goproxy v0.0.0-20251002085012-ee8c821eeb19/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/peterbourgon/diskv/v3 v3.0.1 h1:x06SQA46+PKIUftmEujdwSEpIx8kR+M9eLYsUxeYveU=
