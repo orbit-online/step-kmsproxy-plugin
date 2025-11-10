@@ -175,6 +175,7 @@ func signCertificateForHost(caCert *tls.Certificate, host string) (*tls.Certific
 	if err != nil {
 		return nil, err
 	}
+	tpl.NotBefore = time.Now().Add(-time.Hour * 1)
 	tpl.NotAfter = time.Now().Add(time.Hour * 24 * 365)
 	cert, err := stepX509.CreateCertificate(tpl, caCert.Leaf, tpl.PublicKey, caCert.PrivateKey.(crypto.Signer))
 	if err != nil {
