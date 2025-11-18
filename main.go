@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -55,6 +56,10 @@ var params Params
 
 func main() {
 	kong.Parse(&params, kong.Name("step-kmsproxy-plugin"), kong.Description("Use smallstep to create mTLS tunnels"))
+	slog.SetDefault(slog.Default())
+	if params.Verbose {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
 	err := startProxy(context.Background(), params)
 	if err != nil {
 		log.Fatal(err)
@@ -101,7 +106,7 @@ func startProxy(ctx context.Context, params Params) error {
 
 	go proxy.Serve(proxyListener)
 
-	fmt.Println("Startup completed")
+	slog.Info("Startup completed")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
@@ -155,6 +160,7 @@ func createProxy(
 			RootCAs:            trustPool,
 			InsecureSkipVerify: insecureSkipVerify,
 		}
+		slog.Debug("Sending request", "req", req, "proxyCtx", proxyCtx)
 		return req, nil
 	})
 
@@ -188,6 +194,7 @@ func signCertificateForHost(caCert *tls.Certificate, host string) (*tls.Certific
 }
 
 func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certificate, error) {
+	slog.Debug("Loading key/cert", "kuri", kuri)
 	km, err := openKMS(ctx, kuri)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open KMS using URI %s: %w", kuri, err)
