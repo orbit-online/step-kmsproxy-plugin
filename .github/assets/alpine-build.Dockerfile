@@ -1,4 +1,4 @@
-FROM golang:1.23.6-alpine
+FROM golang:1.25.4-alpine
 ARG TARGETARCH
 ARG VERSION
 RUN apk add pcsc-lite-libs pcsc-lite-dev gcc g++

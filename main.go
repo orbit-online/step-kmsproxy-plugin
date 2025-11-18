@@ -19,12 +19,14 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/elazarl/goproxy"
+	"github.com/fsnotify/fsnotify"
 	"github.com/orbit-online/step-kmsproxy-plugin/listeners"
 	stepCLI "github.com/smallstep/cli-utils/step"
 	stepKey "go.step.sm/crypto/keyutil"
 	stepKMS "go.step.sm/crypto/kms"
 	stepKMSAPI "go.step.sm/crypto/kms/apiv1"
 	stepX509 "go.step.sm/crypto/x509util"
+	"golang.org/x/sync/errgroup"
 
 	// KMS modules (https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/main.go#L19-L29)
 	_ "go.step.sm/crypto/kms/awskms"
@@ -67,28 +69,16 @@ func main() {
 }
 
 func startProxy(ctx context.Context, params Params) error {
+	var wg errgroup.Group
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP)
 	caCert, err := loadKeyCert(ctx, params.CAKey, params.CACert)
 	if err != nil {
 		return err
 	}
 
 	if params.PAC != nil {
-		localhostCert, err := signCertificateForHost(caCert, "localhost")
-		if err != nil {
-			return err
-		}
-		pacListener, err := tls.Listen("tcp", fmt.Sprintf("localhost:%d", params.PACPort), &tls.Config{
-			Certificates: []tls.Certificate{*localhostCert},
-		})
-		if err != nil {
-			return err
-		}
-		pacServer := http.Server{
-			Handler: http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
-				http.ServeFile(writer, reader, *params.PAC)
-			}),
-		}
-		go pacServer.Serve(pacListener)
+		wg.Go(func() error { return createPACServer(caCert) })
 	}
 
 	proxyProto, proxyAddr, found := strings.Cut(params.Listen, ":")
@@ -99,18 +89,69 @@ func startProxy(ctx context.Context, params Params) error {
 	if err != nil {
 		return err
 	}
-	proxy, err := createProxy(ctx, params.ClientKey, params.ClientCert, caCert, params.Trust, params.InsecureSkipVerify, params.Verbose)
+	proxy, err := createProxy(ctx, params.ClientKey, params.ClientCert, caCert, params.Trust, params.InsecureSkipVerify, params.Verbose, sigs)
 	if err != nil {
 		return err
 	}
-
-	go proxy.Serve(proxyListener)
+	if params.ClientCert != nil {
+		wg.Go(func() error { return watchClientCertificate(*params.ClientCert, sigs) })
+	}
+	wg.Go(func() error { return proxy.Serve(proxyListener) })
 
 	slog.Info("Startup completed")
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-	return err
+
+	if err := wg.Wait(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createPACServer(caCert *tls.Certificate) error {
+	localhostCert, err := signCertificateForHost(caCert, "localhost")
+	if err != nil {
+		return err
+	}
+	pacListener, err := tls.Listen("tcp", fmt.Sprintf("localhost:%d", params.PACPort), &tls.Config{
+		Certificates: []tls.Certificate{*localhostCert},
+	})
+	if err != nil {
+		return err
+	}
+	pacServer := http.Server{
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
+			http.ServeFile(writer, reader, *params.PAC)
+		}),
+	}
+	return pacServer.Serve(pacListener)
+}
+
+func watchClientCertificate(clientCertPath string, sigs chan os.Signal) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create filesystem watcher to reload client certificate: %w", err)
+	}
+	defer watcher.Close()
+	err = watcher.Add(clientCertPath)
+	if err != nil {
+		return fmt.Errorf("failed to watch client certificate path %s: %w", clientCertPath, err)
+	}
+
+	slog.Info("Monitoring changes to client certificate", "clientCertPath", clientCertPath)
+	for {
+		select {
+		case _, ok := <-watcher.Events:
+			if !ok {
+				return fmt.Errorf("Watcher was closed")
+			}
+			slog.Info("Client certificate changed", "clientCertPath", clientCertPath)
+			sigs <- syscall.SIGHUP
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return fmt.Errorf("Watcher was closed")
+			}
+			slog.Warn("Error while watching client certificate", "err", err)
+		}
+	}
 }
 
 func createProxy(
@@ -121,6 +162,7 @@ func createProxy(
 	caBundlePaths []string,
 	insecureSkipVerify bool,
 	verbose bool,
+	sigs chan os.Signal,
 ) (*http.Server, error) {
 	trustPool, err := x509.SystemCertPool()
 	if err != nil {
@@ -139,7 +181,16 @@ func createProxy(
 
 	var cachedCert *tls.Certificate
 	loadCachedKeyCert := func() (*tls.Certificate, error) {
+		select {
+		case sig := <-sigs:
+			if sig == syscall.SIGHUP {
+				slog.Debug("Reload signal received, invalidating cached client certificate")
+				cachedCert = nil
+			}
+		default:
+		}
 		if cachedCert != nil && cachedCert.Leaf.NotAfter.Add(-time.Minute*1).Compare(time.Now()) < 1 {
+			slog.Debug("Client certificate expires in less than a minute, invalidating cache")
 			cachedCert = nil
 		}
 		if cachedCert == nil {

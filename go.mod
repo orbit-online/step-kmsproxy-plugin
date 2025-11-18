@@ -1,15 +1,15 @@
 module github.com/orbit-online/step-kmsproxy-plugin
 
-go 1.23.6
-
-toolchain go1.23.7
+go 1.25.4
 
 require (
 	github.com/alecthomas/kong v1.11.0
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/elazarl/goproxy v1.7.2
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/smallstep/cli-utils v0.12.1
 	go.step.sm/crypto v0.59.1
+	golang.org/x/sync v0.12.0
 )
 
 require (
@@ -88,7 +88,6 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
