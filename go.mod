@@ -100,4 +100,4 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 )
 
-replace github.com/elazarl/goproxy v1.7.2 => github.com/orbit-online/goproxy v0.0.0-20251002085012-ee8c821eeb19
+replace github.com/elazarl/goproxy v1.7.2 => github.com/orbit-online/goproxy v0.0.0-20251118092933-5546dc565f00
