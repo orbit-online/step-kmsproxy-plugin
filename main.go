@@ -137,8 +137,22 @@ func createProxy(
 		}
 	}
 
+	var cachedCert *tls.Certificate
+	loadCachedKeyCert := func() (*tls.Certificate, error) {
+		if cachedCert != nil && cachedCert.Leaf.NotAfter.Add(-time.Minute*1).Compare(time.Now()) < 1 {
+			cachedCert = nil
+		}
+		if cachedCert == nil {
+			cachedCert, err = loadKeyCert(ctx, kmsUri, clientCertPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load client certificate: %w", err)
+			}
+		}
+		return cachedCert, nil
+	}
+
 	// Test loading
-	_, err = loadKeyCert(ctx, kmsUri, clientCertPath)
+	_, err = loadCachedKeyCert()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load client certificate: %w", err)
 	}
@@ -154,7 +168,7 @@ func createProxy(
 	proxy.OnRequest().DoFunc(func(req *http.Request, proxyCtx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		proxyCtx.Proxy.Tr.TLSClientConfig = &tls.Config{
 			GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-				return loadKeyCert(ctx, kmsUri, clientCertPath)
+				return loadCachedKeyCert()
 			},
 			Renegotiation:      tls.RenegotiateFreelyAsClient,
 			RootCAs:            trustPool,

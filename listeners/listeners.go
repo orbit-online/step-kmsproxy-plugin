@@ -2,6 +2,7 @@ package listeners
 
 import (
 	"fmt"
+	"log/slog"
 	"net"
 	"sync"
 )
