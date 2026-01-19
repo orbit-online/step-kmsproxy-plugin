@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"crypto"
 	"crypto/tls"
@@ -17,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -53,7 +51,6 @@ type Params struct {
 	CACert             *string  `name:"cacert" help:"Path to CA certificate matching the key at <cakey> (defaults to using <cakey>)"`
 	Trust              []string `name:"trust" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
 	Listen             string   `help:"Cleartext listening address (unix:<PATH>, tcp:<HOSTNAME>:<PORT>, or systemd:)" default:"tcp:localhost:8090"`
-	ListenTLS          string   `help:"TLS listening address (unix:<PATH>, tcp:<HOSTNAME>:<PORT>, or systemd:)" default:"tcp:localhost:8091"`
 	PACPort            int      `help:"Localhost port for serving AutoProxyConfiguration.js" type:"int" default:"8092"`
 	PAC                *string  `help:"Path to AutoProxyConfiguration.js" type:"path"`
 	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
@@ -96,50 +93,33 @@ func startProxy(ctx context.Context, params Params) error {
 		wg.Go(func() error { return watchClientCertificate(*params.ClientCert, sigs) })
 	}
 
-	wg.Go(func() error {
-		proxyProtoCleartext, proxyAddrCleartext, found := strings.Cut(params.Listen, ":")
-		if !found {
-			return fmt.Errorf("unable to determine listening method in --listen option, expected <PROTO>:<ADDR>, got %s", params.Listen)
-		}
-		proxyListenerCleartext, err := listeners.CreateListener(proxyProtoCleartext, proxyAddrCleartext)
-		if err != nil {
-			return err
-		}
-		for {
-			conn, err := proxyListenerCleartext.Accept()
-			if err != nil {
-				return err
-			}
-			go handleRequest(conn, false)
-		}
-	})
+	proxyCert, err := signCertificate(caCert, "localhost", []string{"localhost", "127.0.0.1"})
+	if err != nil {
+		return err
+	}
+	proxyTLSConfig := &tls.Config{
+		Certificates:       []tls.Certificate{*proxyCert},
+		ClientSessionCache: tls.NewLRUClientSessionCache(-1),
+		MinVersion:         tls.VersionTLS12,
+	}
+	proxyProto, proxyAddr, found := strings.Cut(params.Listen, ":")
+	if !found {
+		return fmt.Errorf("unable to determine listening method in --listen-tls option, expected <PROTO>:<ADDR>, got %s", params.Listen)
+	}
+	proxyListener, err := listeners.CreateListener(proxyProto, proxyAddr)
+	if err != nil {
+		return err
+	}
 
 	wg.Go(func() error {
-		proxyCert, err := signCertificate(caCert, "localhost", []string{"localhost", "127.0.0.1"})
-		if err != nil {
-			return err
-		}
-		proxyTLSConfig := &tls.Config{
-			Certificates:       []tls.Certificate{*proxyCert},
-			ClientSessionCache: tls.NewLRUClientSessionCache(-1),
-			MinVersion:         tls.VersionTLS12,
-		}
-		proxyProtoTLS, proxyAddrTLS, found := strings.Cut(params.ListenTLS, ":")
-		if !found {
-			return fmt.Errorf("unable to determine listening method in --listen-tls option, expected <PROTO>:<ADDR>, got %s", params.Listen)
-		}
-		proxyListenerTLS, err := listeners.CreateListener(proxyProtoTLS, proxyAddrTLS)
-		if err != nil {
-			return err
-		}
 		for {
-			conn, err := proxyListenerTLS.Accept()
+			conn, err := proxyListener.Accept()
 			if err != nil {
 				return err
 			}
 			go func(rawClientConn net.Conn) {
 				defer rawClientConn.Close()
-				handleRequest(tls.Server(rawClientConn, proxyTLSConfig), true)
+				handleRequest(tls.Server(rawClientConn, proxyTLSConfig))
 			}(conn)
 		}
 	})
@@ -159,6 +139,7 @@ func createPACServer(caCert *tls.Certificate) error {
 	}
 	pacListener, err := tls.Listen("tcp", fmt.Sprintf("localhost:%d", params.PACPort), &tls.Config{
 		Certificates: []tls.Certificate{*localhostCert},
+		MinVersion:   tls.VersionTLS12,
 	})
 	if err != nil {
 		return err
@@ -208,7 +189,7 @@ func createProxyHandler(
 	caBundlePaths []string,
 	insecureSkipVerify bool,
 	sigs chan os.Signal,
-) (func(clientConn net.Conn, isTLS bool), error) {
+) (func(clientConn net.Conn), error) {
 	trustPool, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load system certificates: %w", err)
@@ -279,6 +260,7 @@ func createProxyHandler(
 
 	successResponse := http.Response{StatusCode: 200, Status: "Connection Established", ProtoMajor: 1, ProtoMinor: 1}
 	errorResponse := http.Response{StatusCode: 502, Status: "Connection Failed", ProtoMajor: 1, ProtoMinor: 1}
+	unsupportedResponse := http.Response{StatusCode: 405, Status: "Must CONNECT", ProtoMajor: 1, ProtoMinor: 1}
 
 	remoteTLSConfig := tls.Config{
 		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
@@ -290,98 +272,60 @@ func createProxyHandler(
 		ClientSessionCache: tls.NewLRUClientSessionCache(-1),
 	}
 
-	handleRequest := func(rawClientConn net.Conn, clientIsTLS bool) {
+	handleRequest := func(rawClientConn net.Conn) {
 		defer rawClientConn.Close()
-		if clientIsTLS {
-			slog.Debug("New TLS request", "client", rawClientConn.RemoteAddr())
-		} else {
-			slog.Debug("New cleartext request", "client", rawClientConn.RemoteAddr())
-		}
-		reqBuf := bytes.NewBuffer(nil)
-		req, err := http.ReadRequest(bufio.NewReader(io.TeeReader(rawClientConn, reqBuf)))
+		slog.Debug("New request", "client", rawClientConn.RemoteAddr())
+
+		req, err := http.ReadRequest(bufio.NewReader(rawClientConn))
 		if err != nil {
 			slog.Error("Error parsing HTTP request", "req", req, "err", err)
 			return
 		}
-		var remoteAddr string
-		if req.Method == http.MethodConnect {
-			remoteAddr = req.Host
-		} else {
-			if matched, err := regexp.Match(`^[^:]+:[0-9]+$`, []byte(req.Host)); !matched || err != nil {
-				if clientIsTLS {
-					remoteAddr = req.Host + ":443"
-				} else {
-					remoteAddr = req.Host + ":80"
-				}
-			} else {
-				remoteAddr = req.Host
-			}
+		if req.Method != http.MethodConnect {
+			unsupportedResponse.Write(rawClientConn)
 		}
-		var remoteConn net.Conn
-		var clientConn net.Conn
-		if clientIsTLS {
-			slog.Debug("Establishing TLS connection", "remote", remoteAddr)
-			remoteTLSConn, err := tls.Dial("tcp", remoteAddr, &remoteTLSConfig)
-			if err != nil {
-				slog.Error("Failed to establish connection", "remote", remoteAddr)
-				if req.Method == http.MethodConnect {
-					errorResponse.Write(rawClientConn)
-				}
-				return
-			}
-			defer remoteTLSConn.Close()
-			slog.Debug("Connected to remote", "remote", remoteAddr)
-			if len(remoteTLSConn.ConnectionState().PeerCertificates) == 0 {
-				slog.Error("No peer certificate received from remote", "remote", remoteAddr)
-				return
-			}
-			remotePeerCert := remoteTLSConn.ConnectionState().PeerCertificates[0]
-			remoteSans := []string{}
-			for _, addr := range remotePeerCert.DNSNames {
-				remoteSans = append(remoteSans, addr)
-			}
-			for _, addr := range remotePeerCert.IPAddresses {
-				remoteSans = append(remoteSans, addr.String())
-			}
-			remoteConn = remoteTLSConn
-			slog.Debug("Establishing client TLS connection", "remote", remoteAddr)
-			clientConn = tls.Server(rawClientConn, getServerTLSConfig(remotePeerCert.Subject.CommonName, remoteSans))
-			slog.Debug("Client TLS connection established, piping data", "remote", remoteAddr)
-		} else {
-			slog.Debug("Establishing cleartext connection", "remote", remoteAddr)
-			remoteConn, err = net.Dial("tcp", remoteAddr)
-			if err != nil {
-				slog.Error("Failed to establish connection", "remote", remoteAddr)
-				if req.Method == http.MethodConnect {
-					errorResponse.Write(rawClientConn)
-				}
-				return
-			}
-			slog.Debug("Connected to remote", "remote", remoteAddr)
-			clientConn = rawClientConn
+		remoteConn, err := tls.Dial("tcp", req.Host, &remoteTLSConfig)
+		if err != nil {
+			slog.Error("Failed to establish connection", "remote", req.Host)
+			errorResponse.Write(rawClientConn)
+			return
 		}
-		if req.Method == http.MethodConnect {
-			successResponse.Write(rawClientConn)
-		} else {
-			remoteConn.Write(reqBuf.Bytes())
+		defer remoteConn.Close()
+		slog.Debug("Connected to remote", "remote", req.Host)
+		if len(remoteConn.ConnectionState().PeerCertificates) == 0 {
+			slog.Error("No peer certificate received from remote", "remote", req.Host)
+			return
 		}
+		remotePeerCert := remoteConn.ConnectionState().PeerCertificates[0]
+		remoteSans := []string{}
+		for _, addr := range remotePeerCert.DNSNames {
+			remoteSans = append(remoteSans, addr)
+		}
+		for _, addr := range remotePeerCert.IPAddresses {
+			remoteSans = append(remoteSans, addr.String())
+		}
+		successResponse.Write(rawClientConn)
+		slog.Debug("Establishing client TLS connection", "remote", req.Host)
+		clientConn := tls.Server(rawClientConn, getServerTLSConfig(remotePeerCert.Subject.CommonName, remoteSans))
+		slog.Debug("Client TLS connection established, piping data", "remote", req.Host)
+
 		var wg sync.WaitGroup
 		wg.Go(func() {
 			defer remoteConn.Close()
 			if _, err := io.Copy(remoteConn, clientConn); err != nil {
-				slog.Debug("Error while piping response to client", "remote", remoteAddr, "err", err)
+				slog.Debug("Error while piping response to client", "remote", req.Host, "err", err)
 			}
-			slog.Debug("Client sent EOF", "remote", remoteAddr, "client", clientConn.RemoteAddr())
+			slog.Debug("Client sent EOF", "remote", req.Host, "client", clientConn.RemoteAddr())
 		})
 		wg.Go(func() {
 			defer clientConn.Close()
 			if _, err := io.Copy(clientConn, remoteConn); err != nil {
-				slog.Debug("Error while piping request to remote", "remote", remoteAddr, "err", err)
+				slog.Debug("Error while piping request to remote", "remote", req.Host, "err", err)
 			}
-			slog.Debug("Remote sent EOF", "remote", remoteAddr)
+			slog.Debug("Remote sent EOF", "remote", req.Host)
 		})
 		wg.Wait()
-		slog.Debug("Request completed", "remote", remoteAddr)
+		slog.Debug("Request completed", "remote", req.Host)
 	}
 
 	return handleRequest, nil
