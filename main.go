@@ -1,24 +1,27 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/elazarl/goproxy"
 	"github.com/fsnotify/fsnotify"
 	"github.com/orbit-online/step-kmsproxy-plugin/listeners"
 	stepCLI "github.com/smallstep/cli-utils/step"
@@ -89,14 +92,14 @@ func startProxy(ctx context.Context, params Params) error {
 	if err != nil {
 		return err
 	}
-	proxy, err := createProxy(ctx, params.ClientKey, params.ClientCert, caCert, params.Trust, params.InsecureSkipVerify, params.Verbose, sigs)
+	serve, err := createProxy(ctx, params.ClientKey, params.ClientCert, caCert, params.Trust, params.InsecureSkipVerify, sigs)
 	if err != nil {
 		return err
 	}
 	if params.ClientCert != nil {
 		wg.Go(func() error { return watchClientCertificate(*params.ClientCert, sigs) })
 	}
-	wg.Go(func() error { return proxy.Serve(proxyListener) })
+	wg.Go(func() error { return serve(proxyListener) })
 
 	slog.Info("Startup completed")
 
@@ -107,7 +110,7 @@ func startProxy(ctx context.Context, params Params) error {
 }
 
 func createPACServer(caCert *tls.Certificate) error {
-	localhostCert, err := signCertificateForHost(caCert, "localhost")
+	localhostCert, err := signCertificate(caCert, "localhost", []string{"localhost", "127.0.0.1"})
 	if err != nil {
 		return err
 	}
@@ -118,8 +121,8 @@ func createPACServer(caCert *tls.Certificate) error {
 		return err
 	}
 	pacServer := http.Server{
-		Handler: http.HandlerFunc(func(writer http.ResponseWriter, reader *http.Request) {
-			http.ServeFile(writer, reader, *params.PAC)
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+			http.ServeFile(writer, req, *params.PAC)
 		}),
 	}
 	return pacServer.Serve(pacListener)
@@ -161,9 +164,8 @@ func createProxy(
 	caCert *tls.Certificate,
 	caBundlePaths []string,
 	insecureSkipVerify bool,
-	verbose bool,
 	sigs chan os.Signal,
-) (*http.Server, error) {
+) (func(l net.Listener) error, error) {
 	trustPool, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, fmt.Errorf("unable to load system certificates: %w", err)
@@ -208,37 +210,113 @@ func createProxy(
 		return nil, fmt.Errorf("failed to load client certificate: %w", err)
 	}
 
-	proxy := goproxy.NewProxyHttpServer()
-	proxy.Verbose = verbose
-	proxy.AllowHTTP2 = true
-	mitmAction := &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(caCert)}
-	var mitmHandler goproxy.FuncHttpsHandler = func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		return mitmAction, host
-	}
-	proxy.OnRequest().HandleConnect(mitmHandler)
-	proxy.OnRequest().DoFunc(func(req *http.Request, proxyCtx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		proxyCtx.Proxy.Tr.TLSClientConfig = &tls.Config{
-			GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
-				return loadCachedKeyCert()
+	cachedProxyCerts := map[string]*tls.Certificate{}
+	getServerTLSConfig := func(commonName string, sans []string) *tls.Config {
+		config := tls.Config{
+			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				var cert *tls.Certificate
+				var ok bool
+				if cert, ok = cachedProxyCerts[hello.ServerName]; !ok {
+					cert, err = signCertificate(caCert, commonName, sans)
+					if err != nil {
+						return nil, err
+					}
+					cachedProxyCerts[commonName] = cert
+					for _, san := range sans {
+						cachedProxyCerts[san] = cert
+					}
+				}
+				return cert, nil
 			},
-			Renegotiation:      tls.RenegotiateFreelyAsClient,
-			RootCAs:            trustPool,
-			InsecureSkipVerify: insecureSkipVerify,
+			ClientSessionCache: tls.NewLRUClientSessionCache(-1),
 		}
-		slog.Debug("Sending request", "req", req, "proxyCtx", proxyCtx)
-		return req, nil
-	})
+		return &config
+	}
 
-	return &http.Server{Handler: http.HandlerFunc(proxy.ServeHTTP)}, nil
+	remoteTLSConfig := tls.Config{
+		GetClientCertificate: func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return loadCachedKeyCert()
+		},
+		Renegotiation:      tls.RenegotiateFreelyAsClient,
+		RootCAs:            trustPool,
+		InsecureSkipVerify: insecureSkipVerify,
+		ClientSessionCache: tls.NewLRUClientSessionCache(-1),
+	}
+
+	handleRequest := func(clientConn net.Conn) {
+		defer clientConn.Close()
+		slog.Debug("New request", "client", clientConn.RemoteAddr())
+		req, err := http.ReadRequest(bufio.NewReader(clientConn))
+		if req.Method != http.MethodConnect {
+			res := http.Response{StatusCode: 405}
+			res.Write(clientConn)
+			slog.Error("Unsupported request method", "method", req.Method, "client", clientConn.RemoteAddr())
+			return
+		}
+		res := http.Response{StatusCode: 200}
+		res.Write(clientConn)
+		slog.Debug("Establishing TLS connection", "remote", req.Host)
+		remoteTLSConn, err := tls.Dial("tcp", req.Host, &remoteTLSConfig)
+		if err != nil {
+			slog.Error("Failed to establish connection", "remote", req.Host)
+			return
+		}
+		slog.Debug("Connected to remote", "remote", req.Host)
+		if len(remoteTLSConn.ConnectionState().PeerCertificates) == 0 {
+			slog.Error("No peer certificate received from remote", "remote", req.Host)
+			return
+		}
+		remotePeerCert := remoteTLSConn.ConnectionState().PeerCertificates[0]
+		remoteSans := []string{}
+		for _, addr := range remotePeerCert.DNSNames {
+			remoteSans = append(remoteSans, addr)
+		}
+		for _, addr := range remotePeerCert.IPAddresses {
+			remoteSans = append(remoteSans, addr.String())
+		}
+		defer remoteTLSConn.Close()
+		slog.Debug("Establishing client TLS connection", "remote", req.Host)
+		clientTLSConn := tls.Server(clientConn, getServerTLSConfig(remotePeerCert.Subject.CommonName, remoteSans))
+		defer clientTLSConn.Close()
+		slog.Debug("Client TLS connection established, piping data", "remote", req.Host)
+		var wg sync.WaitGroup
+		wg.Go(func() {
+			defer remoteTLSConn.Close()
+			if _, err := io.Copy(remoteTLSConn, clientTLSConn); err != nil {
+				slog.Debug("Error while piping response to client", "remote", req.Host, "err", err)
+			}
+			slog.Debug("Client sent EOF", "remote", req.Host, "client", clientConn.RemoteAddr())
+		})
+		wg.Go(func() {
+			defer clientTLSConn.Close()
+			if _, err := io.Copy(clientTLSConn, remoteTLSConn); err != nil {
+				slog.Debug("Error while piping request to remote", "remote", req.Host, "err", err)
+			}
+			slog.Debug("Remote sent EOF", "remote", req.Host)
+		})
+		wg.Wait()
+		slog.Debug("Request completed", "remote", req.Host)
+	}
+
+	serve := func(l net.Listener) error {
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				return err
+			}
+			go handleRequest(conn)
+		}
+	}
+
+	return serve, nil
 }
 
-// Only used for the localhost PAC server signing, the proxy lib has its own function that is not exposed
-func signCertificateForHost(caCert *tls.Certificate, host string) (*tls.Certificate, error) {
+func signCertificate(caCert *tls.Certificate, commonName string, sans []string) (*tls.Certificate, error) {
 	key, err := stepKey.GenerateDefaultSigner()
 	if err != nil {
 		return nil, err
 	}
-	csr, err := stepX509.CreateCertificateRequest(host, []string{host}, key)
+	csr, err := stepX509.CreateCertificateRequest(commonName, sans, key)
 	if err != nil {
 		return nil, err
 	}
