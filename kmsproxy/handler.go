@@ -27,7 +27,6 @@ var ErrorResponse = http.Response{StatusCode: 502, Status: "Connection Failed", 
 var UnsupportedResponse = http.Response{StatusCode: 405, Status: "Must CONNECT", ProtoMajor: 1, ProtoMinor: 1}
 
 func (proxy *Proxy) Serve(addr string) error {
-
 	listener, err := proxy.ListenTLS(addr)
 	if err != nil {
 		return err
@@ -48,6 +47,7 @@ func (proxy *Proxy) Serve(addr string) error {
 			}
 			if req.Method != http.MethodConnect {
 				UnsupportedResponse.Write(rawClientConn)
+				return
 			}
 			remoteConn, err := tls.Dial("tcp", req.Host, proxy.clientTLSConfig)
 			if err != nil {
