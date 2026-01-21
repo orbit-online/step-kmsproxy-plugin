@@ -56,6 +56,9 @@ func NewProxy(
 	if err != nil {
 		return nil, err
 	}
+	if client.Leaf.NotAfter.Compare(time.Now()) < 1 {
+		slog.Warn("The client certificate has expired", "NotAfter", client.Leaf.NotAfter)
+	}
 	return &Proxy{
 		ca:               ca,
 		clientKeyURI:     clientKey,
@@ -74,32 +77,49 @@ func NewProxy(
 }
 
 func (proxy *Proxy) WatchClientCert(ctx context.Context, sigs chan os.Signal) error {
-	var wg errgroup.Group
-	var resetTimer func(cert *x509.Certificate)
+	var minTimer *time.Timer
+	var expiryTimer *time.Timer
+	retryInterval := time.Second * 60
 
 	updateClientCert := func(reason string) {
 		slog.Info("Reloading client certificate", "reason", reason)
 		client, err := loadKeyCert(ctx, proxy.clientKeyURI, proxy.clientCertPath)
+		reloadIn := retryInterval
 		if err != nil {
 			slog.Error("failed to load client certificate", "err", err)
-		}
-		proxy.clientTLSConfig.Certificates = []tls.Certificate{*client}
-		resetTimer(client.Leaf)
-	}
-
-	minTimer := time.AfterFunc(60*time.Second, func() { updateClientCert("Previous reload yielded an expired client certificate") })
-	minTimer.Stop()
-	expiryTimer := time.AfterFunc(60*time.Second, func() { updateClientCert("Client certificate has expired") })
-	resetTimer = func(cert *x509.Certificate) {
-		reloadIn := time.Until(cert.NotAfter)
-		if reloadIn <= 0 {
-			slog.Warn("The client certificate has expired")
-			minTimer.Reset(60 * time.Second)
 		} else {
+			proxy.clientTLSConfig.Certificates = []tls.Certificate{*client}
+			reloadIn = time.Until(client.Leaf.NotAfter)
+			if reloadIn.Seconds() <= 0 {
+				slog.Warn("The client certificate is expired", "NotAfter", client.Leaf.NotAfter)
+			}
+		}
+		if reloadIn.Seconds() <= 0 {
+			expiryTimer.Stop()
+			minTimer.Reset(retryInterval)
+		} else {
+			minTimer.Stop()
 			expiryTimer.Reset(reloadIn)
 		}
 	}
 
+	minTimer = time.AfterFunc(
+		retryInterval,
+		func() { updateClientCert("Previous reload yielded an expired client certificate") },
+	)
+	expiryTimer = time.AfterFunc(
+		retryInterval,
+		func() { updateClientCert("Client certificate has expired") },
+	)
+	reloadIn := time.Until(proxy.clientTLSConfig.Certificates[0].Leaf.NotAfter)
+	if reloadIn.Seconds() <= 0 {
+		expiryTimer.Stop()
+	} else {
+		minTimer.Stop()
+		expiryTimer.Reset(reloadIn)
+	}
+
+	var wg errgroup.Group
 	if proxy.clientCertPath != nil {
 		wg.Go(func() error {
 			slog.Info("Monitoring client certificate", "path", *proxy.clientCertPath)

@@ -157,9 +157,6 @@ func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certi
 	if keyCert.Leaf, err = x509.ParseCertificate(keyCert.Certificate[0]); err != nil {
 		return nil, fmt.Errorf("failed to parse certificate leaf in %s: %w", certPathLog, err)
 	}
-	if keyCert.Leaf.NotAfter.Compare(time.Now()) < 1 {
-		slog.Warn("The client certificate has expired", "path", certPathLog)
-	}
 	return keyCert, nil
 }
 
