@@ -103,6 +103,16 @@ func (proxy *Proxy) SignCertificate(commonName string, sans []string) (*tls.Cert
 
 func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certificate, error) {
 	slog.Debug("Loading key/cert", "kuri", kuri)
+	if _, err := os.Stat(kuri); err == nil {
+		if certPath == nil {
+			return nil, fmt.Errorf("You must specify a certificate when providing a certificate key as a path")
+		}
+		keyCert, err := tls.LoadX509KeyPair(*certPath, kuri)
+		if err != nil {
+			return nil, err
+		}
+		return &keyCert, nil
+	}
 	km, err := openKMS(ctx, kuri)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open KMS using URI %s: %w", kuri, err)
@@ -150,14 +160,14 @@ func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certi
 	if err != nil {
 		return nil, fmt.Errorf("failed to load private key using KMS URI %s: %w", kuri, err)
 	}
-	keyCert := &tls.Certificate{
+	keyCert := tls.Certificate{
 		Certificate: rawCerts,
 		PrivateKey:  key,
 	}
 	if keyCert.Leaf, err = x509.ParseCertificate(keyCert.Certificate[0]); err != nil {
 		return nil, fmt.Errorf("failed to parse certificate leaf in %s: %w", certPathLog, err)
 	}
-	return keyCert, nil
+	return &keyCert, nil
 }
 
 // Source: https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/cmd/root.go#L74-L94
