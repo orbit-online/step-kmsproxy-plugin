@@ -57,7 +57,7 @@ You can use KMS proxy for authenticating with Kubernetes:
    ```
 1. Tell KMS proxy to trust the certificate:
    ```
-   ExecStart=%h/.local/bin/step-kmsproxy-plugin ... --cacert %h/.config/kmsproxy/<CLUSTER-NAME>.crt tpmkms:name=mykey
+   ExecStart=%h/.local/bin/step-kmsproxy-plugin ... --trust %h/.config/kmsproxy/<CLUSTER-NAME>.crt tpmkms:name=mykey
    ```
 1. Change your kubeconfig to use KMS proxy:
    ```
