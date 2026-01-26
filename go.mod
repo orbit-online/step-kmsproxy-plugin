@@ -3,8 +3,7 @@ module github.com/orbit-online/step-kmsproxy-plugin
 go 1.25.4
 
 require (
-	github.com/alecthomas/kong v1.11.0
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
+	github.com/alecthomas/kong v1.13.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/smallstep/cli-utils v0.12.1
 	go.step.sm/crypto v0.59.1
