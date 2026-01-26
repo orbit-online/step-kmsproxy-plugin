@@ -7,7 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/smallstep/cli-utils v0.12.1
 	go.step.sm/crypto v0.59.1
-	golang.org/x/sync v0.12.0
+	golang.org/x/sync v0.19.0
 )
 
 require (
