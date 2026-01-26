@@ -51,7 +51,7 @@ func (proxy *Proxy) Serve(addr string) error {
 			}
 			remoteConn, err := tls.Dial("tcp", req.Host, proxy.clientTLSConfig)
 			if err != nil {
-				slog.Error("Failed to establish connection", "remote", req.Host)
+				slog.Error("Failed to establish TLS connection with remote", "err", err, "remote", req.Host)
 				ErrorResponse.Write(rawClientConn)
 				return
 			}
@@ -63,7 +63,7 @@ func (proxy *Proxy) Serve(addr string) error {
 			}
 			proxiedTLSConfig, err := proxy.getProxiedTLSConfig(remoteConn.ConnectionState().PeerCertificates[0])
 			if err != nil {
-				slog.Error("Failed to establish connection", "remote", req.Host)
+				slog.Error("Failed generating TLS proxy config", "err", err, "remote", req.Host)
 				ErrorResponse.Write(rawClientConn)
 				return
 			}
