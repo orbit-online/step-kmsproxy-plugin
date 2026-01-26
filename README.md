@@ -64,7 +64,7 @@ You can use KMS proxy for authenticating with Kubernetes:
    clusters:
    - cluster:
        server: https://api.kube.example.com:6443
-       proxy-url: http://localhost:8090
+       proxy-url: https://localhost:8090
      name: <CLUSTER-NAME>
    ```
 

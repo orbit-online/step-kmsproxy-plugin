@@ -13,6 +13,6 @@ StandardError=journal
 ExecStart=%h/.local/bin/step-kmsproxy-plugin \
   --cacert %h/.config/kmsproxy/kube-cluster.crt \
   --pac %h/.config/kmsproxy/ProxyAutoConfiguration.js \
+  --cacert %h/.config/kmsproxy/ca.crt \
   tpmkms:name=mykey \
-  %h/.config/kmsproxy/ca.crt \
   %h/.config/kmsproxy/ca.key
