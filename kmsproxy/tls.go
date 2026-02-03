@@ -152,6 +152,9 @@ func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certi
 				cert.Certificate = append(cert.Certificate, certPart.Bytes)
 			}
 		}
+		if len(cert.Certificate) == 0 {
+			return nil, fmt.Errorf("no certificates could be loaded from %s", certPathLog)
+		}
 		rawCerts = cert.Certificate
 	}
 	key, err := km.CreateSigner(&stepKMSAPI.CreateSignerRequest{
