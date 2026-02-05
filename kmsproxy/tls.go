@@ -1,24 +1,16 @@
 package kmsproxy
 
 import (
-	"context"
 	"crypto"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
-	"fmt"
 	"log/slog"
 	"net"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
-	stepCLI "github.com/smallstep/cli-utils/step"
 	stepKey "go.step.sm/crypto/keyutil"
-	stepKMS "go.step.sm/crypto/kms"
-	stepKMSAPI "go.step.sm/crypto/kms/apiv1"
 	stepX509 "go.step.sm/crypto/x509util"
 
 	// KMS modules (https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/main.go#L19-L29)
@@ -101,97 +93,20 @@ func (proxy *Proxy) SignCertificate(commonName string, sans []string) (*tls.Cert
 	}, nil
 }
 
-func loadKeyCert(ctx context.Context, kuri string, certPath *string) (*tls.Certificate, error) {
-	slog.Debug("Loading key/cert", "kuri", kuri)
-	if _, err := os.Stat(kuri); err == nil {
-		if certPath == nil {
-			return nil, fmt.Errorf("You must specify a certificate when providing a certificate key as a path")
+func (proxy *Proxy) warnExpired() {
+	for certPath, certBundle := range proxy.clientCertMap {
+		if certBundle != nil && certBundle[0].NotAfter.Compare(time.Now()) < 1 {
+			slog.Warn("A client certificate has expired", "NotAfter", certBundle[0].NotAfter, "path", certPath)
 		}
-		keyCert, err := tls.LoadX509KeyPair(*certPath, kuri)
-		if err != nil {
-			return nil, err
-		}
-		return &keyCert, nil
 	}
-	km, err := openKMS(ctx, kuri)
-	if err != nil {
-		return nil, fmt.Errorf("unable to open KMS using URI %s: %w", kuri, err)
-	}
-	cm, ok := km.(stepKMSAPI.CertificateChainManager)
-	if !ok {
-		return nil, fmt.Errorf("unable to load certificates from KMS: %s", km)
-	}
-	var rawCerts [][]byte
-	var certPathLog string
-	if certPath == nil {
-		certPathLog = kuri
-		cert, err := cm.LoadCertificateChain(&stepKMSAPI.LoadCertificateChainRequest{
-			Name: kuri,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to load certificates from KMS URI %s: %w", kuri, err)
-		}
-		for _, c := range cert {
-			rawCerts = append(rawCerts, c.Raw)
-		}
-	} else {
-		certPathLog = *certPath
-		rawBundle, err := os.ReadFile(*certPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read client cert at %s: %w", *certPath, err)
-		}
-		// https://gist.github.com/laher/5795578
-		var cert tls.Certificate
-		var certPart *pem.Block
-		for {
-			certPart, rawBundle = pem.Decode(rawBundle)
-			if certPart == nil {
-				break
-			}
-			if certPart.Type == "CERTIFICATE" {
-				cert.Certificate = append(cert.Certificate, certPart.Bytes)
-			}
-		}
-		if len(cert.Certificate) == 0 {
-			return nil, fmt.Errorf("no certificates could be loaded from %s", certPathLog)
-		}
-		rawCerts = cert.Certificate
-	}
-	key, err := km.CreateSigner(&stepKMSAPI.CreateSignerRequest{
-		SigningKey: kuri,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load private key using KMS URI %s: %w", kuri, err)
-	}
-	keyCert := tls.Certificate{
-		Certificate: rawCerts,
-		PrivateKey:  key,
-	}
-	if keyCert.Leaf, err = x509.ParseCertificate(keyCert.Certificate[0]); err != nil {
-		return nil, fmt.Errorf("failed to parse certificate leaf in %s: %w", certPathLog, err)
-	}
-	return &keyCert, nil
 }
 
-// Source: https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/cmd/root.go#L74-L94
-func openKMS(ctx context.Context, kuri string) (stepKMSAPI.KeyManager, error) {
-	typ, err := stepKMSAPI.TypeOf(kuri)
-	if err != nil {
-		return nil, err
-	}
-
-	var storageDirectory string
-	if typ == stepKMSAPI.TPMKMS {
-		if err := stepCLI.Init(); err != nil {
-			return nil, err
+func (proxy *Proxy) getEarliestClientCertExpiry() time.Time {
+	earliest := proxy.clientTLSConfig.Certificates[0].Leaf.NotAfter
+	for _, cert := range proxy.clientTLSConfig.Certificates {
+		if cert.Leaf.NotAfter.Before(earliest) {
+			earliest = cert.Leaf.NotAfter
 		}
-		storageDirectory = filepath.Join(stepCLI.Path(), "tpm")
 	}
-
-	// Type is not necessary, but it avoids an extra validation
-	return stepKMS.New(ctx, stepKMSAPI.Options{
-		Type:             typ,
-		URI:              kuri,
-		StorageDirectory: storageDirectory,
-	})
+	return earliest
 }
