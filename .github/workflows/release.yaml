@@ -31,7 +31,8 @@ jobs:
         for arch in amd64 arm64 386; do
           GOARCH=$arch go build --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }}" -o release/github.com/orbit-online/step-kmsproxy-plugin-linux-${arch}
         done
-        xgo --dest release --targets=windows/amd64,windows/386,darwin/arm64,darwin/amd64,darwin/386 --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }}" .
+        xgo --dest release --targets=darwin/arm64,darwin/amd64,darwin/386 --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }}" .
+        xgo --dest release --targets=windows/amd64,windows/386 --ldflags="-X main.VERSION=${{ steps.program_version.outputs.version }} -H windowsgui" .
         docker buildx build --output type=tar --build-arg VERSION=${{ steps.program_version.outputs.version }} --platform linux/amd64 --file .github/assets/alpine-build.Dockerfile . | tar -xO step-kmsproxy-plugin >release/github.com/orbit-online/step-kmsproxy-plugin-alpine-amd64
         docker buildx build --output type=tar --build-arg VERSION=${{ steps.program_version.outputs.version }} --platform linux/arm64 --file .github/assets/alpine-build.Dockerfile . | tar -xO step-kmsproxy-plugin >release/github.com/orbit-online/step-kmsproxy-plugin-alpine-arm64
         chmod +x release/github.com/orbit-online/step-kmsproxy-plugin-alpine-amd64 release/github.com/orbit-online/step-kmsproxy-plugin-alpine-arm64
