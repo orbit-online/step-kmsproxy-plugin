@@ -16,7 +16,7 @@
 		<array>
 			<string>/bin/bash</string>
 			<string>-c</string>
-			<string>$HOME/.local/bin/step-kmsproxy-plugin   --trust $HOME/.config/kmsproxy/kube-cluster.crt --pac $HOME/.config/kmsproxy/ProxyAutoConfiguration.js --clientcert $HOME/.config/client.crt --clientkey tpmkms:default tpmkms:name=ca $HOME/.config/kmsproxy/ca.crt</string>
+			<string>$HOME/.local/bin/step-kmsproxy-plugin --trust $HOME/.config/kmsproxy/kube-cluster.crt --pac $HOME/.config/kmsproxy/ProxyAutoConfiguration.js --clientcert $HOME/.config/client.crt --clientkey tpmkms:default tpmkms:name=ca $HOME/.config/kmsproxy/ca.crt</string>
 		</array>
 		<key>StandardErrorPath</key>
 		<string>/tmp/step-kmsproxy-plugin.stderr</string>
