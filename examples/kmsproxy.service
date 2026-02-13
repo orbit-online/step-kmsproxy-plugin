@@ -1,5 +1,5 @@
 # Place in ~/.config/systemd/user/kmsproxy.service
-# The run `systemctl --user enable kmsproxy.service`
+# Then run `systemctl --user enable kmsproxy.service`
 # And start with `systemctl --user start kmsproxy.service`
 [Unit]
 Description=mTLS proxy
@@ -13,6 +13,7 @@ StandardError=journal
 ExecStart=%h/.local/bin/step-kmsproxy-plugin \
   --trust %h/.config/kmsproxy/kube-cluster.crt \
   --pac %h/.config/kmsproxy/ProxyAutoConfiguration.js \
-  --cacert %h/.config/kmsproxy/ca.crt \
-  tpmkms:name=mykey \
-  %h/.config/kmsproxy/ca.key
+  --clientcert %h/.config/client.crt \
+  --clientkey tpmkms:default \
+  tpmkms:name=ca \
+  %h/.config/kmsproxy/ca.crt

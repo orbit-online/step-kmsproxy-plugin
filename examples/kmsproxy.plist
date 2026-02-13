@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>Label</key>
+		<string>step-kmsproxy-plugin</string>
+		<key>RunAtLoad</key>
+		<true/>
+		<key>EnvironmentVariables</key>
+		<dict>
+			<key>PATH</key>
+			<string>/opt/homebrew/bin</string>
+		</dict>
+		<key>ProgramArguments</key>
+		<array>
+			<string>/bin/bash</string>
+			<string>-c</string>
+			<string>$HOME/.local/bin/step-kmsproxy-plugin   --trust $HOME/.config/kmsproxy/kube-cluster.crt --pac $HOME/.config/kmsproxy/ProxyAutoConfiguration.js --clientcert $HOME/.config/client.crt --clientkey tpmkms:default tpmkms:name=ca $HOME/.config/kmsproxy/ca.crt</string>
+		</array>
+		<key>StandardErrorPath</key>
+		<string>/tmp/step-kmsproxy-plugin.stderr</string>
+		<key>StandardOutPath</key>
+		<string>/tmp/step-kmsproxy-plugin.stdout</string>
+	</dict>
+</plist>
