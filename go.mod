@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/alecthomas/kong v1.13.0
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.76.0
 	golang.org/x/sync v0.19.0
