@@ -17,7 +17,7 @@ jobs:
     - id: program_version
       uses: orbit-online/program-version@v1
     - name: Cache xgo-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /home/runner/.xgo-cache
         key: xgo-cache
