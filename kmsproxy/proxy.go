@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	path_poller "github.com/orbit-online/go-path-poller"
 )
@@ -20,6 +21,7 @@ type Proxy struct {
 	tlsConfigMutexes *sync.Map
 	pacFile          *string
 	pathNotifier     *path_poller.PathNotifier
+	reloadTimer      *time.Timer
 }
 
 func NewProxy(
@@ -74,8 +76,12 @@ func NewProxy(
 		pacFile:      pacFile,
 		pathNotifier: pathNotifier,
 	}
-	if err := proxy.reloadClientKeyCerts(ctx); err != nil {
-		return nil, err
+	proxy.LoadClientKeyCerts(ctx, "Startup")
+	for keyPath, _ := range proxy.clientKeyMap {
+		proxy.pathNotifier.AddFunc(keyPath, func() { proxy.LoadClientKeyCerts(ctx, fmt.Sprintf("%s changed", keyPath)) })
+	}
+	for certPath, _ := range proxy.clientCertMap {
+		proxy.pathNotifier.AddFunc(certPath, func() { proxy.LoadClientKeyCerts(ctx, fmt.Sprintf("%s changed", certPath)) })
 	}
 	proxy.warnExpired()
 	return &proxy, nil

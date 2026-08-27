@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"time"
 
 	stepCLI "github.com/smallstep/cli-utils/step"
 	stepKey "go.step.sm/crypto/keyutil"
@@ -20,10 +21,21 @@ import (
 	stepPEM "go.step.sm/crypto/pemutil"
 )
 
-func (proxy *Proxy) reloadClientKeyCerts(ctx context.Context) error {
+const RELOAD_RETRY_INTERVAL = time.Second * 60
+
+func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
+	slog.Info("Loading client keys and certificates", "reason", reason)
+	if proxy.reloadTimer != nil {
+		proxy.reloadTimer.Stop()
+	}
+
+	errorsEncountered := false
+	proxy.warnExpired()
+
 	for keyPath, _ := range proxy.clientKeyMap {
 		key, err := loadKey(ctx, keyPath)
 		if err != nil {
+			errorsEncountered = true
 			slog.Error("Failed to load certificate", "path", keyPath, "err", err)
 		}
 		proxy.clientKeyMap[keyPath] = key
@@ -31,6 +43,7 @@ func (proxy *Proxy) reloadClientKeyCerts(ctx context.Context) error {
 	for certPath, _ := range proxy.clientCertMap {
 		cert, err := loadCert(ctx, certPath)
 		if err != nil {
+			errorsEncountered = true
 			slog.Error("Failed to load certificate", "path", certPath, "err", err)
 		}
 		proxy.clientCertMap[certPath] = cert
@@ -49,6 +62,7 @@ func (proxy *Proxy) reloadClientKeyCerts(ctx context.Context) error {
 		)
 	}
 	if len(keyCerts) == 0 {
+		errorsEncountered = true
 		slog.Error(
 			"Unable to match any certificates to keys",
 			"keyPaths", slices.Collect(maps.Keys(unmatchedKeys)),
@@ -56,7 +70,38 @@ func (proxy *Proxy) reloadClientKeyCerts(ctx context.Context) error {
 		)
 	}
 	proxy.clientTLSConfig.Certificates = keyCerts
-	return nil
+
+	if errorsEncountered {
+		proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous certificate load yielded errors") })
+	} else {
+		if earliest := proxy.getEarliestClientCertExpiry(); !earliest.IsZero() {
+			reloadIn := time.Until(earliest)
+			if reloadIn > 0 {
+				proxy.reloadTimer = time.AfterFunc(reloadIn, func() { proxy.LoadClientKeyCerts(ctx, "A client certificate has expired") })
+			} else {
+				proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded an expired client certificate") })
+			}
+		} else {
+			proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded no valid client certificates") })
+		}
+	}
+}
+
+func (proxy *Proxy) warnExpired() {
+	for certPath, certBundle := range proxy.clientCertMap {
+		if certBundle != nil && certBundle[0].NotAfter.Compare(time.Now()) < 1 {
+			slog.Warn("A client certificate has expired", "NotAfter", certBundle[0].NotAfter, "path", certPath)
+		}
+	}
+}
+
+func (proxy *Proxy) getEarliestClientCertExpiry() (earliest time.Time) {
+	for _, cert := range proxy.clientTLSConfig.Certificates {
+		if earliest.IsZero() || cert.Leaf.NotAfter.Before(earliest) {
+			earliest = cert.Leaf.NotAfter
+		}
+	}
+	return earliest
 }
 
 func loadKeyCert(ctx context.Context, keyPath string, certPath string) (*tls.Certificate, error) {

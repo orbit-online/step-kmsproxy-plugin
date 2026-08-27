@@ -92,21 +92,3 @@ func (proxy *Proxy) SignCertificate(commonName string, sans []string) (*tls.Cert
 		PrivateKey:  key,
 	}, nil
 }
-
-func (proxy *Proxy) warnExpired() {
-	for certPath, certBundle := range proxy.clientCertMap {
-		if certBundle != nil && certBundle[0].NotAfter.Compare(time.Now()) < 1 {
-			slog.Warn("A client certificate has expired", "NotAfter", certBundle[0].NotAfter, "path", certPath)
-		}
-	}
-}
-
-func (proxy *Proxy) getEarliestClientCertExpiry() time.Time {
-	earliest := proxy.clientTLSConfig.Certificates[0].Leaf.NotAfter
-	for _, cert := range proxy.clientTLSConfig.Certificates {
-		if cert.Leaf.NotAfter.Before(earliest) {
-			earliest = cert.Leaf.NotAfter
-		}
-	}
-	return earliest
-}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -47,10 +48,14 @@ func main() {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 	err := startProxy(context.Background(), params)
+	ret := 0
 	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+		if !errors.Is(err, context.Canceled) {
+			ret = 1
+			slog.Error(err.Error())
+		}
 	}
+	os.Exit(ret)
 }
 
 func startProxy(parentCtx context.Context, params Params) error {
@@ -69,8 +74,6 @@ func startProxy(parentCtx context.Context, params Params) error {
 		return err
 	}
 
-	reloadKeyCerts := proxy.SetupWatchers(ctx)
-
 	reloadSig := make(chan os.Signal, 1)
 	signal.Notify(reloadSig, syscall.SIGHUP)
 	wg.Go(func() error {
@@ -79,7 +82,7 @@ func startProxy(parentCtx context.Context, params Params) error {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-reloadSig:
-				reloadKeyCerts("SIGHUP reload signal was sent")
+				proxy.LoadClientKeyCerts(ctx, "SIGHUP reload signal was sent")
 			}
 		}
 	})
@@ -87,14 +90,11 @@ func startProxy(parentCtx context.Context, params Params) error {
 	wg.Go(func() error { return pathNotifier.Run(ctx) })
 
 	if params.PACPath != nil {
-		wg.Go(func() error { return proxy.ServePAC(params.PACListenAddr) })
+		wg.Go(func() error { return proxy.ServePAC(ctx, params.PACListenAddr) })
 	}
 
-	wg.Go(func() error { return proxy.Serve(params.ListenAddr) })
+	wg.Go(func() error { return proxy.Serve(ctx, params.ListenAddr) })
 
 	slog.Info("Startup completed")
-	if err := wg.Wait(); err != nil {
-		return err
-	}
-	return nil
+	return wg.Wait()
 }
