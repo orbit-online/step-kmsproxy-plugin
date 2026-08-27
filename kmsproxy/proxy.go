@@ -16,7 +16,7 @@ type Proxy struct {
 	clientCertMap    map[string][]x509.Certificate
 	clientTLSConfig  *tls.Config
 	tlsConfigMutexes *sync.Map
-	PACFile          *string
+	pacFile          *string
 }
 
 func NewProxy(
@@ -67,7 +67,7 @@ func NewProxy(
 			InsecureSkipVerify: insecureSkipVerify,
 			ClientSessionCache: tls.NewLRUClientSessionCache(-1),
 		},
-		PACFile: pacFile,
+		pacFile: pacFile,
 	}
 	if err := proxy.reloadClientKeyCerts(ctx); err != nil {
 		return nil, err

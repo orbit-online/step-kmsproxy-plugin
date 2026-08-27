@@ -11,7 +11,7 @@ func (proxy *Proxy) ServePAC(addr string) error {
 	}
 	pacServer := http.Server{
 		Handler: http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-			http.ServeFile(writer, req, *proxy.PACFile)
+			http.ServeFile(writer, req, *proxy.pacFile)
 		}),
 	}
 	return pacServer.Serve(pacListener)
