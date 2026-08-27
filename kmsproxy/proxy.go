@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
+	path_poller "github.com/orbit-online/go-path-poller"
 )
 
 type Proxy struct {
@@ -17,6 +19,7 @@ type Proxy struct {
 	clientTLSConfig  *tls.Config
 	tlsConfigMutexes *sync.Map
 	pacFile          *string
+	pathNotifier     *path_poller.PathNotifier
 }
 
 func NewProxy(
@@ -28,6 +31,7 @@ func NewProxy(
 	clientCertPaths []string,
 	insecureSkipVerify bool,
 	pacFile *string,
+	pathNotifier *path_poller.PathNotifier,
 ) (*Proxy, error) {
 	var err error
 	ca, err := loadKeyCert(ctx, caKeyPath, caCertPath)
@@ -67,7 +71,8 @@ func NewProxy(
 			InsecureSkipVerify: insecureSkipVerify,
 			ClientSessionCache: tls.NewLRUClientSessionCache(-1),
 		},
-		pacFile: pacFile,
+		pacFile:      pacFile,
+		pathNotifier: pathNotifier,
 	}
 	if err := proxy.reloadClientKeyCerts(ctx); err != nil {
 		return nil, err

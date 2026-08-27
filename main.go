@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kong"
+	path_poller "github.com/orbit-online/go-path-poller"
 	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy"
 	"golang.org/x/sync/errgroup"
 
@@ -52,19 +53,45 @@ func main() {
 	}
 }
 
-func startProxy(ctx context.Context, params Params) error {
-	var wg errgroup.Group
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGHUP)
-	proxy, err := kmsproxy.NewProxy(ctx, params.CAKeyPath, params.CACertPath, params.TrustBundlePaths, params.ClientKeyPaths, params.ClientCertPaths, params.InsecureSkipVerify, params.PACPath)
+func startProxy(parentCtx context.Context, params Params) error {
+	wg, groupCtx := errgroup.WithContext(parentCtx)
+
+	ctx, stop := signal.NotifyContext(groupCtx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	pathNotifier, err := path_poller.NewPathNotifier()
 	if err != nil {
 		return err
 	}
-	wg.Go(func() error { return proxy.WatchPaths(ctx, sigs) })
+
+	proxy, err := kmsproxy.NewProxy(ctx, params.CAKeyPath, params.CACertPath, params.TrustBundlePaths, params.ClientKeyPaths, params.ClientCertPaths, params.InsecureSkipVerify, params.PACPath, pathNotifier)
+	if err != nil {
+		return err
+	}
+
+	reloadKeyCerts := proxy.SetupWatchers(ctx)
+
+	reloadSig := make(chan os.Signal, 1)
+	signal.Notify(reloadSig, syscall.SIGHUP)
+	wg.Go(func() error {
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-reloadSig:
+				reloadKeyCerts("SIGHUP reload signal was sent")
+			}
+		}
+	})
+
+	wg.Go(func() error { return pathNotifier.Run(ctx) })
+
 	if params.PACPath != nil {
 		wg.Go(func() error { return proxy.ServePAC(params.PACListenAddr) })
 	}
+
 	wg.Go(func() error { return proxy.Serve(params.ListenAddr) })
+
 	slog.Info("Startup completed")
 	if err := wg.Wait(); err != nil {
 		return err

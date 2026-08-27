@@ -1,10 +1,10 @@
 module github.com/orbit-online/step-kmsproxy-plugin
 
-go 1.25.4
+go 1.26.5
 
 require (
 	github.com/alecthomas/kong v1.13.0
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/orbit-online/go-path-poller v0.0.0-20260817123752-12f7a9fe9a68
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.76.0
 	golang.org/x/sync v0.19.0
@@ -48,6 +48,7 @@ require (
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
