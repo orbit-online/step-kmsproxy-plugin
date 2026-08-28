@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, stripSuffixes []string) error {
+func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, stripSuffixes []string, portMap map[string]int64) error {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -53,7 +53,11 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 							break
 						}
 					}
-					remoteAddr = fmt.Sprintf("%s:%d", remoteHost, 443)
+					if port, ok := portMap[hello.ServerName]; ok {
+						remoteAddr = fmt.Sprintf("%s:%d", remoteHost, port)
+					} else {
+						remoteAddr = fmt.Sprintf("%s:%d", remoteHost, 443)
+					}
 
 					remoteConn, err = tls.Dial("tcp", remoteAddr, proxy.clientTLSConfig)
 					if err != nil {

@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/alecthomas/kong"
@@ -37,6 +40,7 @@ type Params struct {
 	PACPath            *string  `name:"pac" help:"Path to AutoProxyConfiguration.js" type:"path"`
 	RevListenAddr      string   `name:"rev-listen" help:"Reverse proxy listening address, empty string to disable" type:"string" default:"localhost:8092"`
 	RevSuffixes        []string `name:"rev-suffix" help:"Suffixes to strip from reverse proxied domains" type:"string" default:".kmsproxy.internal"`
+	RevPortMap         []string `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
 	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
 	Verbose            bool     `help:"Turn on verbose logging"`
 }
@@ -100,7 +104,19 @@ func startProxy(parentCtx context.Context, params Params) error {
 	}
 
 	if params.RevListenAddr != "" {
-		wg.Go(func() error { return proxy.ServeReverseProxyRequests(ctx, params.RevListenAddr, params.RevSuffixes) })
+		wg.Go(func() error {
+			portMap := map[string]int64{}
+			for _, mapping := range params.RevPortMap {
+				split := strings.SplitN(mapping, "=", 2)
+				if len(split) != 2 {
+					return fmt.Errorf("Invalid --rev-portmap %s, must be DOMAIN=PORT", mapping)
+				}
+				if portMap[split[0]], err = strconv.ParseInt(split[1], 10, 32); err != nil {
+					return err
+				}
+			}
+			return proxy.ServeReverseProxyRequests(ctx, params.RevListenAddr, params.RevSuffixes, portMap)
+		})
 	}
 
 	slog.Info("Startup completed")
