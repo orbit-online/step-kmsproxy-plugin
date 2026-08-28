@@ -1,12 +1,15 @@
 package kmsproxy
 
 import (
+	"bufio"
 	"crypto"
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/asn1"
 	"log/slog"
 	"net"
+	"net/http"
+	"slices"
 	"sync"
 	"time"
 
@@ -26,30 +29,52 @@ import (
 	_ "go.step.sm/crypto/kms/yubikey"
 )
 
-func (proxy *Proxy) getProxiedTLSConfig(remotePeerCert *x509.Certificate) (*tls.Config, error) {
-	generate, _ := proxy.tlsConfigMutexes.LoadOrStore(sha256.Sum256(remotePeerCert.Raw), sync.OnceValues(func() (*tls.Config, error) {
-		slog.Debug("Generating cert", "CN", remotePeerCert.Subject.CommonName)
-		remoteSans := []string{}
-		for _, addr := range remotePeerCert.DNSNames {
-			remoteSans = append(remoteSans, addr)
-		}
-		for _, addr := range remotePeerCert.IPAddresses {
-			remoteSans = append(remoteSans, addr.String())
-		}
-		cert, err := proxy.SignCertificate(remotePeerCert.Subject.CommonName, remoteSans)
-		if err != nil {
-			return nil, err
-		}
-		config := &tls.Config{
-			Certificates: []tls.Certificate{*cert},
-			MinVersion:   tls.VersionTLS12,
-		}
-		return config, nil
-	}))
-	return generate.(func() (*tls.Config, error))()
+func (proxy *Proxy) getReverseProxiedTLSCert(remotePeerCert *x509.Certificate, commonName string) (*tls.Certificate, error) {
+	slog.Debug("Generating cert", "CN", commonName)
+	key, err := stepKey.GenerateDefaultSigner()
+	if err != nil {
+		return nil, err
+	}
+	localPeerCert := *remotePeerCert
+	localPeerCert.Subject.CommonName = commonName
+	localPeerCert.RawSubject, err = asn1.Marshal(localPeerCert.Subject.ToRDNSequence())
+	if err != nil {
+		return nil, err
+	}
+	localPeerCert.SignatureAlgorithm = stepKey.DefaultSignatureAlgorithm
+	localPeerCert.DNSNames = append(localPeerCert.DNSNames, commonName)
+	if !slices.Contains(localPeerCert.DNSNames, remotePeerCert.Subject.CommonName) {
+		localPeerCert.DNSNames = append(localPeerCert.DNSNames, remotePeerCert.Subject.CommonName)
+	}
+	newCert, err := stepX509.CreateCertificate(&localPeerCert, proxy.ca.Leaf, key.Public(), proxy.ca.PrivateKey.(crypto.Signer))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Certificate{
+		Certificate: [][]byte{newCert.Raw},
+		PrivateKey:  key,
+	}, nil
 }
 
-func (proxy *Proxy) ListenTLS(addr string) (net.Listener, error) {
+func (proxy *Proxy) getProxiedTLSCert(remotePeerCert *x509.Certificate) (*tls.Certificate, error) {
+	slog.Debug("Generating cert", "CN", remotePeerCert.Subject.CommonName)
+	key, err := stepKey.GenerateDefaultSigner()
+	if err != nil {
+		return nil, err
+	}
+	localPeerCert := *remotePeerCert
+	localPeerCert.SignatureAlgorithm = stepKey.DefaultSignatureAlgorithm
+	newCert, err := stepX509.CreateCertificate(&localPeerCert, proxy.ca.Leaf, key.Public(), proxy.ca.PrivateKey.(crypto.Signer))
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Certificate{
+		Certificate: [][]byte{newCert.Raw},
+		PrivateKey:  key,
+	}, nil
+}
+
+func (proxy *Proxy) SignCertificateForListenAddr(addr string) (*tls.Certificate, error) {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		return nil, err
@@ -58,22 +83,11 @@ func (proxy *Proxy) ListenTLS(addr string) (net.Listener, error) {
 	if host == "localhost" {
 		sans = append(sans, "127.0.0.1")
 	}
-	servingCert, err := proxy.SignCertificate(host, sans)
-	if err != nil {
-		return nil, err
-	}
-	return tls.Listen("tcp", addr, &tls.Config{
-		Certificates: []tls.Certificate{*servingCert},
-		MinVersion:   tls.VersionTLS12,
-	})
-}
-
-func (proxy *Proxy) SignCertificate(commonName string, sans []string) (*tls.Certificate, error) {
 	key, err := stepKey.GenerateDefaultSigner()
 	if err != nil {
 		return nil, err
 	}
-	csr, err := stepX509.CreateCertificateRequest(commonName, sans, key)
+	csr, err := stepX509.CreateCertificateRequest(host, sans, key)
 	if err != nil {
 		return nil, err
 	}
@@ -91,4 +105,56 @@ func (proxy *Proxy) SignCertificate(commonName string, sans []string) (*tls.Cert
 		Certificate: [][]byte{cert.Raw},
 		PrivateKey:  key,
 	}, nil
+}
+
+type ConnectionHandoverListener struct {
+	addr       net.Addr
+	clientConn net.Conn
+	acceptMu   *sync.Mutex
+	closed     chan error
+}
+
+func newConnectionHandoverListener(addr net.Addr, clientConn net.Conn) ConnectionHandoverListener {
+	return ConnectionHandoverListener{
+		addr:       addr,
+		clientConn: clientConn,
+		acceptMu:   &sync.Mutex{},
+		closed:     make(chan error, 1),
+	}
+}
+func (l ConnectionHandoverListener) Accept() (net.Conn, error) {
+	if l.acceptMu.TryLock() {
+		clientConn := l.clientConn
+		l.clientConn = nil
+		return clientConn, nil
+	} else {
+		if err, ok := <-l.closed; ok {
+			return nil, err
+		} else {
+			return nil, net.ErrClosed
+		}
+	}
+}
+func (l ConnectionHandoverListener) Close() error {
+	select {
+	case l.closed <- net.ErrClosed:
+	default:
+	}
+	close(l.closed)
+	return l.clientConn.Close()
+}
+func (l ConnectionHandoverListener) Addr() net.Addr {
+	return l.addr
+}
+
+type TLSConnRoundTripper struct {
+	conn *tls.Conn
+}
+
+func (rt *TLSConnRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if err := req.Write(rt.conn); err != nil {
+		return nil, err
+	}
+	res, err := http.ReadResponse(bufio.NewReader(rt.conn), req)
+	return res, err
 }

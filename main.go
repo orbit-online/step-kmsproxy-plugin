@@ -32,9 +32,11 @@ type Params struct {
 	ClientKeyPaths     []string `required:"" name:"clientkey" help:"Filesystem paths or Smallstep KMS key URIs to use for mTLS connections"`
 	ClientCertPaths    []string `required:"" name:"clientcert" help:"Path to client certificates matching the keys from --clientkey"`
 	TrustBundlePaths   []string `name:"trust" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
-	ListenAddr         string   `name:"listen" help:"Listening address" type:"string" default:"localhost:8090"`
+	ListenAddr         string   `name:"listen" help:"Listening address, empty string to disable" type:"string" default:"localhost:8090"`
 	PACListenAddr      string   `name:"pac-listen" help:"Listening address for serving AutoProxyConfiguration.js" default:"localhost:8091"`
 	PACPath            *string  `name:"pac" help:"Path to AutoProxyConfiguration.js" type:"path"`
+	RevListenAddr      string   `name:"rev-listen" help:"Reverse proxy listening address, empty string to disable" type:"string" default:"localhost:8092"`
+	RevSuffixes        []string `name:"rev-suffix" help:"Suffixes to strip from reverse proxied domains" type:"string" default:".kmsproxy.internal"`
 	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
 	Verbose            bool     `help:"Turn on verbose logging"`
 }
@@ -93,7 +95,13 @@ func startProxy(parentCtx context.Context, params Params) error {
 		wg.Go(func() error { return proxy.ServePAC(ctx, params.PACListenAddr) })
 	}
 
-	wg.Go(func() error { return proxy.Serve(ctx, params.ListenAddr) })
+	if params.ListenAddr != "" {
+		wg.Go(func() error { return proxy.ServeHTTPSProxyRequests(ctx, params.ListenAddr) })
+	}
+
+	if params.RevListenAddr != "" {
+		wg.Go(func() error { return proxy.ServeReverseProxyRequests(ctx, params.RevListenAddr, params.RevSuffixes) })
+	}
 
 	slog.Info("Startup completed")
 	return wg.Wait()

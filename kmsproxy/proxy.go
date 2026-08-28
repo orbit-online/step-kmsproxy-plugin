@@ -14,14 +14,14 @@ import (
 )
 
 type Proxy struct {
-	ca               *tls.Certificate
-	clientKeyMap     map[string]crypto.Signer
-	clientCertMap    map[string][]x509.Certificate
-	clientTLSConfig  *tls.Config
-	tlsConfigMutexes *sync.Map
-	pacFile          *string
-	pathNotifier     *path_poller.PathNotifier
-	reloadTimer      *time.Timer
+	ca                        *tls.Certificate
+	clientCertKeysReloadTimer *time.Timer
+	clientCertKeysMutex       sync.Mutex
+	clientKeyMap              map[string]crypto.Signer
+	clientCertMap             map[string][]x509.Certificate
+	clientTLSConfig           *tls.Config
+	pacFile                   *string
+	pathNotifier              *path_poller.PathNotifier
 }
 
 func NewProxy(
@@ -63,10 +63,10 @@ func NewProxy(
 		clientCertMap[certPath] = nil
 	}
 	proxy := Proxy{
-		ca:               ca,
-		clientKeyMap:     clientKeyMap,
-		clientCertMap:    clientCertMap,
-		tlsConfigMutexes: &sync.Map{},
+		ca:                  ca,
+		clientCertKeysMutex: sync.Mutex{},
+		clientKeyMap:        clientKeyMap,
+		clientCertMap:       clientCertMap,
 		clientTLSConfig: &tls.Config{
 			Renegotiation:      tls.RenegotiateFreelyAsClient,
 			RootCAs:            trustPool,

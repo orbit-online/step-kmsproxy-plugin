@@ -24,9 +24,11 @@ import (
 const RELOAD_RETRY_INTERVAL = time.Second * 60
 
 func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
+	proxy.clientCertKeysMutex.Lock()
+	defer proxy.clientCertKeysMutex.Unlock()
 	slog.Info("Loading client keys and certificates", "reason", reason)
-	if proxy.reloadTimer != nil {
-		proxy.reloadTimer.Stop()
+	if proxy.clientCertKeysReloadTimer != nil {
+		proxy.clientCertKeysReloadTimer.Stop()
 	}
 
 	errorsEncountered := false
@@ -72,17 +74,17 @@ func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
 	proxy.clientTLSConfig.Certificates = keyCerts
 
 	if errorsEncountered {
-		proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous certificate load yielded errors") })
+		proxy.clientCertKeysReloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous certificate load yielded errors") })
 	} else {
 		if earliest := proxy.getEarliestClientCertExpiry(); !earliest.IsZero() {
 			reloadIn := time.Until(earliest)
 			if reloadIn > 0 {
-				proxy.reloadTimer = time.AfterFunc(reloadIn, func() { proxy.LoadClientKeyCerts(ctx, "A client certificate has expired") })
+				proxy.clientCertKeysReloadTimer = time.AfterFunc(reloadIn, func() { proxy.LoadClientKeyCerts(ctx, "A client certificate has expired") })
 			} else {
-				proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded an expired client certificate") })
+				proxy.clientCertKeysReloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded an expired client certificate") })
 			}
 		} else {
-			proxy.reloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded no valid client certificates") })
+			proxy.clientCertKeysReloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous load yielded no valid client certificates") })
 		}
 	}
 }

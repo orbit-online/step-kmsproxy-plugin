@@ -2,11 +2,19 @@ package kmsproxy
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 )
 
 func (proxy *Proxy) ServePAC(ctx context.Context, addr string) error {
-	pacListener, err := proxy.ListenTLS(addr)
+	servingCert, err := proxy.SignCertificateForListenAddr(addr)
+	if err != nil {
+		return err
+	}
+	pacListener, err := tls.Listen("tcp", addr, &tls.Config{
+		Certificates: []tls.Certificate{*servingCert},
+		MinVersion:   tls.VersionTLS12,
+	})
 	if err != nil {
 		return err
 	}
