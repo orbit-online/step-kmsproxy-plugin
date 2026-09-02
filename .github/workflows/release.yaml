@@ -22,7 +22,7 @@ jobs:
         path: /home/runner/.xgo-cache
         key: xgo-cache
     - name: Install techknowlogick/xgo
-      run: go install src.techknowlogick.com/xgo@v1.8.0+1.23.2
+      run: go install src.techknowlogick.com/xgo@v1.9.0
     - name: Install build deps
       run: sudo apt-get install --no-install-recommends libpcsclite-dev
     - name: Build step-kmsproxy-plugin
