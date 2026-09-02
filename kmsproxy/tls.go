@@ -153,8 +153,7 @@ type TLSConnRoundTripper struct {
 
 func (rt *TLSConnRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := req.Write(rt.conn); err != nil {
-		return nil, err
+		slog.Error(err.Error())
 	}
-	res, err := http.ReadResponse(bufio.NewReader(rt.conn), req)
-	return res, err
+	return http.ReadResponse(bufio.NewReader(rt.conn), req)
 }
