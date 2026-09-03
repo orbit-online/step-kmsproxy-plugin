@@ -80,11 +80,14 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 				},
 			})
 			defer clientConn.Close()
-			defer remoteConn.Close()
 			if err := clientConn.Handshake(); err != nil {
+				if remoteConn != nil {
+					remoteConn.Close()
+				}
 				slog.Error(err.Error())
 				return
 			}
+			defer remoteConn.Close()
 
 			slog.Debug("Client TLS connection established, piping data", "remote", remoteAddr)
 
