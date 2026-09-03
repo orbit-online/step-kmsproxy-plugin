@@ -1,6 +1,6 @@
 module github.com/orbit-online/step-kmsproxy-plugin
 
-go 1.27.1
+go 1.26.8
 
 require (
 	github.com/alecthomas/kong v1.16.1
