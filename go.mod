@@ -7,7 +7,7 @@ require (
 	github.com/orbit-online/go-path-poller v0.0.0-20260817123752-12f7a9fe9a68
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.89.0
-	golang.org/x/sync v0.22.0
+	golang.org/x/sync v0.24.0
 )
 
 require (
