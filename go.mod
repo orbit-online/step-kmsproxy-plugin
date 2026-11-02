@@ -3,7 +3,7 @@ module github.com/orbit-online/step-kmsproxy-plugin
 go 1.26.8
 
 require (
-	github.com/alecthomas/kong v1.16.1
+	github.com/alecthomas/kong v1.17.0
 	github.com/orbit-online/go-path-poller v0.0.0-20260817123752-12f7a9fe9a68
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.89.0
