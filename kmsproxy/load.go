@@ -71,7 +71,9 @@ func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
 			"certPaths", slices.Collect(maps.Keys(unmatchedCerts)),
 		)
 	}
-	proxy.clientTLSConfig.Certificates = keyCerts
+	clientTLSConfig := proxy.clientTLSConfig.Load().Clone()
+	clientTLSConfig.Certificates = keyCerts
+	proxy.clientTLSConfig.Store(clientTLSConfig)
 
 	if errorsEncountered {
 		proxy.clientCertKeysReloadTimer = time.AfterFunc(RELOAD_RETRY_INTERVAL, func() { proxy.LoadClientKeyCerts(ctx, "Previous certificate load yielded errors") })
@@ -98,7 +100,7 @@ func (proxy *Proxy) warnExpired() {
 }
 
 func (proxy *Proxy) getEarliestClientCertExpiry() (earliest time.Time) {
-	for _, cert := range proxy.clientTLSConfig.Certificates {
+	for _, cert := range proxy.clientTLSConfig.Load().Certificates {
 		if earliest.IsZero() || cert.Leaf.NotAfter.Before(earliest) {
 			earliest = cert.Leaf.NotAfter
 		}

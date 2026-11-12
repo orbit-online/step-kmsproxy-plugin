@@ -59,7 +59,7 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 						remoteAddr = fmt.Sprintf("%s:%d", remoteHost, 443)
 					}
 
-					remoteConn, err = tls.Dial("tcp", remoteAddr, proxy.clientTLSConfig)
+					remoteConn, err = tls.Dial("tcp", remoteAddr, proxy.clientTLSConfig.Load())
 					if err != nil {
 						return nil, fmt.Errorf("Failed to establish TLS connection with remote %s, error: %w", remoteAddr, err)
 					}
@@ -71,7 +71,7 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 					}
 					tlsCert, err := getTLSCert(remotePeerCerts[0], hello.ServerName)
 					if err != nil {
-						return nil, fmt.Errorf("Failed generating TLS proxy config, remote: %w, error :%w", remoteAddr, err)
+						return nil, fmt.Errorf("Failed generating TLS proxy config, remote: %s, error: %w", remoteAddr, err)
 					}
 					return &tls.Config{
 						Certificates: []tls.Certificate{*tlsCert},

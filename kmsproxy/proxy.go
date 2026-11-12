@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	path_poller "github.com/orbit-online/go-path-poller"
@@ -19,7 +20,7 @@ type Proxy struct {
 	clientCertKeysMutex       sync.Mutex
 	clientKeyMap              map[string]crypto.Signer
 	clientCertMap             map[string][]x509.Certificate
-	clientTLSConfig           *tls.Config
+	clientTLSConfig           atomic.Pointer[tls.Config] // Swapped on reload, a tls.Config in use must not be modified
 	pacFile                   *string
 	pathNotifier              *path_poller.PathNotifier
 }
@@ -67,15 +68,15 @@ func NewProxy(
 		clientCertKeysMutex: sync.Mutex{},
 		clientKeyMap:        clientKeyMap,
 		clientCertMap:       clientCertMap,
-		clientTLSConfig: &tls.Config{
-			Renegotiation:      tls.RenegotiateFreelyAsClient,
-			RootCAs:            trustPool,
-			InsecureSkipVerify: insecureSkipVerify,
-			ClientSessionCache: tls.NewLRUClientSessionCache(-1),
-		},
-		pacFile:      pacFile,
-		pathNotifier: pathNotifier,
+		pacFile:             pacFile,
+		pathNotifier:        pathNotifier,
 	}
+	proxy.clientTLSConfig.Store(&tls.Config{
+		Renegotiation:      tls.RenegotiateFreelyAsClient,
+		RootCAs:            trustPool,
+		InsecureSkipVerify: insecureSkipVerify,
+		ClientSessionCache: tls.NewLRUClientSessionCache(-1),
+	})
 	proxy.LoadClientKeyCerts(ctx, "Startup")
 	for keyPath, _ := range proxy.clientKeyMap {
 		proxy.pathNotifier.AddFunc(keyPath, func() { proxy.LoadClientKeyCerts(ctx, fmt.Sprintf("%s changed", keyPath)) })

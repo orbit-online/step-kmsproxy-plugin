@@ -53,17 +53,18 @@ func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) er
 			slog.Debug("New proxy request", "client", conn.RemoteAddr())
 			req, err := http.ReadRequest(bufio.NewReader(conn))
 			if err != nil {
-				slog.Error(fmt.Errorf("Error parsing HTTP request, req: %s, error: %w", req, err).Error())
+				slog.Error("Error parsing HTTP request", "client", conn.RemoteAddr(), "error", err)
 				return
 			}
 			if req.Method != http.MethodConnect {
 				UnsupportedResponse.Write(conn)
-				slog.Error("Method was not CONNECT")
+				slog.Error("Method was not CONNECT", "method", req.Method)
+				return
 			}
 
 			remoteHost := req.Host
 
-			remoteConn, err := tls.Dial("tcp", remoteHost, proxy.clientTLSConfig)
+			remoteConn, err := tls.Dial("tcp", remoteHost, proxy.clientTLSConfig.Load())
 			if err != nil {
 				ErrorResponse.Write(conn)
 				slog.Error("Failed to establish TLS connection with remote", "remote", remoteHost, "error", err)
@@ -74,6 +75,7 @@ func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) er
 
 			remotePeerCerts := remoteConn.ConnectionState().PeerCertificates
 			if len(remotePeerCerts) == 0 {
+				ErrorResponse.Write(conn)
 				slog.Error("No peer certificate received from remote", "remote", remoteHost)
 				return
 			}
