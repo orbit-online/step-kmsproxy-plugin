@@ -12,6 +12,9 @@ import (
 )
 
 func ownCgroup(t *testing.T) string {
+	if _, err := os.Stat(cgroupRoot + "/cgroup.controllers"); err != nil {
+		t.Skip("no cgroup2 filesystem at", cgroupRoot)
+	}
 	raw, err := os.ReadFile("/proc/self/cgroup")
 	if err != nil {
 		t.Fatal(err)
@@ -26,6 +29,7 @@ func ownCgroup(t *testing.T) string {
 }
 
 func TestIdentifySelf(t *testing.T) {
+	ownCgroup(t)
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -56,6 +60,7 @@ func TestIdentifySelf(t *testing.T) {
 }
 
 func TestIdentifyNamespaced(t *testing.T) {
+	ownCgroup(t)
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
