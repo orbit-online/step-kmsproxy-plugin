@@ -54,11 +54,20 @@ func IdentifyCaller(local, remote string) (Caller, error) {
 			}
 		}
 	}
+	// The executables, from /proc/<pid>/exe rather than the name a process can set itself. Within one cgroup they're a
+	// label, not a boundary: any process there can run a binary of the same name
 	var names []string
 	for _, pid := range holders {
-		if exe, err := os.Readlink(fmt.Sprintf("/proc/%d/exe", pid)); err == nil && !slices.Contains(names, filepath.Base(exe)) {
-			names = append(names, filepath.Base(exe))
+		if exe, err := os.Readlink(fmt.Sprintf("/proc/%d/exe", pid)); err == nil {
+			if name := ExeName(exe); !slices.Contains(names, name) {
+				names = append(names, name)
+			}
 		}
+	}
+	slices.Sort(names)
+	exes := strings.Join(names, ",")
+	if exes == "" {
+		exes = "unknown"
 	}
 	unit := NormalizeCgroup(cgroup)
 	desc := "an unidentified process"
@@ -75,7 +84,7 @@ func IdentifyCaller(local, remote string) (Caller, error) {
 	case "unknown":
 		desc += ", namespaces unknown"
 	}
-	return Caller{ID: fmt.Sprintf("linux uid=%d cgroup=%s ns=%s", uid, unit, ns), Description: desc}, nil
+	return Caller{ID: fmt.Sprintf("linux uid=%d cgroup=%s exe=%s ns=%s", uid, unit, exes, ns), Description: desc}, nil
 }
 
 // sockDiag asks the kernel about the TCP socket from src to dst: its owner's uid, its inode and its cgroup id
@@ -237,6 +246,16 @@ func sameNamespaces(pid int) bool {
 		}
 	}
 	return true
+}
+
+// ExeName is the name of an executable, without the dots and "-wrapped" Nix wrappers add (.kubectl-wrapped is kubectl), so
+// a rule outlives updates that move it to another store path
+func ExeName(path string) string {
+	name := strings.TrimLeft(filepath.Base(path), ".")
+	for strings.HasSuffix(name, "-wrapped") {
+		name = strings.TrimSuffix(name, "-wrapped")
+	}
+	return name
 }
 
 // An instance id systemd or a launcher puts in a unit or cgroup name: a number, a UUID or a long hex string

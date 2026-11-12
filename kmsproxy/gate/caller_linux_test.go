@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -49,12 +50,12 @@ func TestIdentifySelf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := fmt.Sprintf("linux uid=%d cgroup=%s ns=host", os.Getuid(), NormalizeCgroup(ownCgroup(t)))
+	exe, _ := os.Executable()
+	want := fmt.Sprintf("linux uid=%d cgroup=%s exe=%s ns=host", os.Getuid(), NormalizeCgroup(ownCgroup(t)), ExeName(exe))
 	if caller.ID != want {
 		t.Fatalf("ID %q, want %q", caller.ID, want)
 	}
-	exe, _ := os.Executable()
-	if !strings.Contains(caller.Description, exe[strings.LastIndex(exe, "/")+1:]) {
+	if !strings.Contains(caller.Description, ExeName(exe)) {
 		t.Fatalf("description %q doesn't name the test binary", caller.Description)
 	}
 }
@@ -89,11 +90,16 @@ func TestIdentifyNamespaced(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Root in the namespace is still the user outside it
-	want := fmt.Sprintf("linux uid=%d cgroup=%s ns=namespaced", os.Getuid(), NormalizeCgroup(ownCgroup(t)))
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bash, _ = filepath.EvalSymlinks(bash)
+	want := fmt.Sprintf("linux uid=%d cgroup=%s exe=%s ns=namespaced", os.Getuid(), NormalizeCgroup(ownCgroup(t)), ExeName(bash))
 	if caller.ID != want {
 		t.Fatalf("ID %q, want %q", caller.ID, want)
 	}
-	if !strings.Contains(caller.Description, "bash") || !strings.Contains(caller.Description, "sandboxed") {
+	if !strings.Contains(caller.Description, ExeName(bash)) || !strings.Contains(caller.Description, "sandboxed") {
 		t.Fatalf("description %q", caller.Description)
 	}
 }
@@ -111,6 +117,19 @@ func TestNormalizeCgroup(t *testing.T) {
 	} {
 		if got := NormalizeCgroup(in); got != want {
 			t.Errorf("NormalizeCgroup(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestExeName(t *testing.T) {
+	for in, want := range map[string]string{
+		"/nix/store/abc-kubectl-1.34/bin/.kubectl-wrapped":         "kubectl",
+		"/nix/store/abc-k9s/bin/..k9s-wrapped-wrapped":             "k9s",
+		"/nix/store/abc-firefox-unwrapped-140/lib/firefox/firefox": "firefox",
+		"/usr/bin/curl": "curl",
+	} {
+		if got := ExeName(in); got != want {
+			t.Errorf("ExeName(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

@@ -56,8 +56,10 @@ What counts as one caller depends on the OS:
 
 - Linux: the uid and cgroup of the client socket, from sock_diag, with instance
   ids dropped (`app-gnome-firefox-1234.scope` is `app-gnome-firefox.scope`),
-  and whether the process runs in a user or mount namespace other than the
-  proxy. The question is a desktop notification; on COSMIC, which shows no
+  the executable names (from `/proc/<pid>/exe`, without Nix wrapper
+  decorations), and whether the process runs in a user or mount namespace
+  other than the proxy. Within a cgroup the executable is a label, not a
+  boundary. The question is a desktop notification; on COSMIC, which shows no
   buttons, a click on it opens a zenity dialog.
 - macOS: the code signature (designated requirement) and App Sandbox flag of
   the client process, found with `lsof` and `codesign`. The question is an
