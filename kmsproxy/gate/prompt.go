@@ -25,6 +25,14 @@ func promptText(caller Caller, domains []string) (summary, body string) {
 	return summary, body
 }
 
+// buttons are the labels a prompt for caller offers, in order: "Always allow" only where Grantable allows it
+func buttons(caller Caller) []string {
+	if Grantable(caller.ID) {
+		return []string{labelAlways, labelTemp, labelDeny}
+	}
+	return []string{labelTemp, labelDeny}
+}
+
 // answerFor maps a button label to its answer, anything else to Dismissed
 func answerFor(label string) Answer {
 	switch strings.TrimSpace(label) {

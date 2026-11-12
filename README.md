@@ -67,6 +67,10 @@ What counts as one caller depends on the OS:
 - Windows: the user, AppContainer and executable of the client process. The
   question is a task dialog.
 
+"Always allow" isn't offered for a caller the OS couldn't inspect, e.g. a
+process of your own that made itself unreadable (`exe=unknown ns=unknown`);
+on Linux root is the exception, since only root owns a socket as uid 0.
+
 `--allow FILE` adds read-only rules in the same format, e.g. a default list
 shipped with the system; they aren't written to `allowed.json`. `--no-gate`
 turns the gate off.

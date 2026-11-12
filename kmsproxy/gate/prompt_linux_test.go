@@ -147,7 +147,7 @@ func ask(t *testing.T, addr string, f *fakeNotifications, domains ...string) *as
 	t.Cleanup(cancel)
 	a := &asking{answer: make(chan Answer, 1), dialogs: make(chan string, 1), cancel: cancel}
 	go func() {
-		answer, err := askOn(ctx, busConn(t, addr), testCaller, domains, func(ctx context.Context, summary, body string) (Answer, error) {
+		answer, err := askOn(ctx, busConn(t, addr), testCaller, domains, func(ctx context.Context, summary, body string, labels []string) (Answer, error) {
 			a.dialogs <- body
 			return AllowTemp, nil
 		})
@@ -194,6 +194,19 @@ func TestNotificationButtons(t *testing.T) {
 
 // A caller on the session bus replaces the notification by its id with a button whose key is "allow", or sends
 // ActionInvoked with the real key itself. Neither allows
+func TestNotificationNoAlwaysForHidden(t *testing.T) {
+	addr, f := testBus(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go askOn(ctx, busConn(t, addr), Caller{ID: "linux uid=1000 cgroup=/app exe=unknown ns=unknown"}, []string{"a.example"}, nil)
+	id := <-f.posted
+	if f.key(id, labelAlways) != "" || f.key(id, labelTemp) == "" || f.key(id, labelDeny) == "" {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		t.Errorf("buttons %q", f.shown[id])
+	}
+}
+
 func TestNotificationForged(t *testing.T) {
 	immature(t)
 	addr, f := testBus(t)

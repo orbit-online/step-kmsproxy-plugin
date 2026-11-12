@@ -97,13 +97,12 @@ func AskUser(ctx context.Context, caller Caller, domains []string) (Answer, erro
 	}
 	ptr := unsafe.Sizeof(uintptr(0))
 	// TASKDIALOG_BUTTON and TASKDIALOGCONFIG are declared under #pragma pack(1), so they're laid out by hand
-	buttons := packed{}
-	for _, b := range []struct {
-		id    int32
-		label string
-	}{{idAlways, labelAlways}, {idTemp, labelTemp}, {idDeny, labelDeny}} {
-		buttons.u32(uint32(b.id))
-		buttons.ptr(uintptr(unsafe.Pointer(strs[b.label])), ptr)
+	ids := map[string]int32{labelAlways: idAlways, labelTemp: idTemp, labelDeny: idDeny}
+	labels := buttons(caller)
+	buttonsCfg := packed{}
+	for _, label := range labels {
+		buttonsCfg.u32(uint32(ids[label]))
+		buttonsCfg.ptr(uintptr(unsafe.Pointer(strs[label])), ptr)
 	}
 	cfg := packed{}
 	cfg.u32(0) // cbSize, set below
@@ -115,8 +114,8 @@ func AskUser(ctx context.Context, caller Caller, domains []string) (Answer, erro
 	cfg.ptr(tdWarningIcon, ptr)
 	cfg.ptr(uintptr(unsafe.Pointer(strs[summary])), ptr)
 	cfg.ptr(uintptr(unsafe.Pointer(strs[body])), ptr)
-	cfg.u32(3)
-	cfg.ptr(uintptr(unsafe.Pointer(&buttons.b[0])), ptr)
+	cfg.u32(uint32(len(labels)))
+	cfg.ptr(uintptr(unsafe.Pointer(&buttonsCfg.b[0])), ptr)
 	cfg.u32(uint32(int32(idDeny)))
 	cfg.u32(0)
 	cfg.ptr(0, ptr)
@@ -132,7 +131,7 @@ func AskUser(ctx context.Context, caller Caller, domains []string) (Answer, erro
 	var button int32
 	r, _, _ := syscall.SyscallN(cc.taskDialog, uintptr(unsafe.Pointer(&cfg.b[0])), uintptr(unsafe.Pointer(&button)), 0, 0)
 	runtime.KeepAlive(strs)
-	runtime.KeepAlive(buttons.b)
+	runtime.KeepAlive(buttonsCfg.b)
 	runtime.KeepAlive(cfg.b)
 	if ctx.Err() != nil {
 		return Dismissed, nil

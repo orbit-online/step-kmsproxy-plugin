@@ -70,19 +70,24 @@ func IdentifyCaller(local, remote string) (Caller, error) {
 		exes = "unknown"
 	}
 	unit := NormalizeCgroup(cgroup)
-	desc := "an unidentified process"
-	if len(names) > 0 {
+	var desc string
+	switch {
+	case len(names) > 0:
 		desc = strings.Join(names, ", ")
+	case uid == 0:
+		desc = "a root process"
+	default:
+		desc = "a process"
 	}
 	desc += " in " + filepath.Base(unit)
-	if uid != uint32(os.Getuid()) {
+	if uid != 0 && uid != uint32(os.Getuid()) {
 		desc += fmt.Sprintf(" as uid %d", uid)
 	}
 	switch ns {
 	case "namespaced":
 		desc += ", sandboxed"
 	case "unknown":
-		desc += ", namespaces unknown"
+		desc += ", which can't be inspected"
 	}
 	return Caller{ID: fmt.Sprintf("linux uid=%d cgroup=%s exe=%s ns=%s", uid, unit, exes, ns), Description: desc}, nil
 }

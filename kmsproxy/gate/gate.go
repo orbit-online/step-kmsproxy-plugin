@@ -95,17 +95,19 @@ func New(path string, defaults []string, identify Identify, ask Ask) (*Gate, err
 		callers: map[string]*callerState{},
 	}
 	for _, p := range defaults {
-		if err := readRules(p, g.defaults); err != nil {
+		if err := readRules(p, g.defaults, false); err != nil {
 			return nil, err
 		}
 	}
-	if err := readRules(path, g.always); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if err := readRules(path, g.always, true); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 	return g, nil
 }
 
-func readRules(path string, into map[rule]bool) error {
+// readRules reads the rules in path. With answered, the user's answers, it skips rules for callers Grantable rejects:
+// they can only come from an edit
+func readRules(path string, into map[rule]bool, answered bool) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("Read the allowed callers: %w", err)
@@ -115,9 +117,27 @@ func readRules(path string, into map[rule]bool) error {
 		return fmt.Errorf("Parse the allowed callers in %s: %w", path, err)
 	}
 	for _, r := range rules {
+		if answered && !Grantable(r.Caller) {
+			slog.Warn("Ignored an allowed caller that can't be identified well enough", "path", path, "caller", r.Caller,
+				"domain", r.Domain)
+			continue
+		}
 		into[rule{r.Caller, normalizeDomain(r.Domain)}] = true
 	}
 	return nil
+}
+
+// Grantable says whether "Always allow" may be offered to a caller: not when the OS couldn't see the process behind
+// the connection, since a process can make itself unreadable (on Linux, a non-dumpable process of the user outside a
+// user namespace). Root is the exception on Linux: only root owns a socket as uid 0
+func Grantable(id string) bool {
+	switch {
+	case strings.HasPrefix(id, "linux "):
+		return !strings.HasSuffix(id, " ns=unknown") || strings.HasPrefix(id, "linux uid=0 ")
+	case strings.HasPrefix(id, "darwin unidentified"), strings.HasPrefix(id, "windows unidentified"):
+		return false
+	}
+	return true
 }
 
 func normalizeDomain(domain string) string {
@@ -226,6 +246,9 @@ func (g *Gate) answer(cs *callerState, p *prompt, answer Answer) {
 	defer g.mu.Unlock()
 	now := g.now()
 	persist := false
+	if answer == AllowAlways && !Grantable(cs.caller.ID) {
+		answer = AllowTemp // Not offered, so not a real answer; but the user meant to allow
+	}
 	// consentShown: rules only for the domains the prompt showed
 	for domain := range p.shown {
 		r := rule{cs.caller.ID, domain}

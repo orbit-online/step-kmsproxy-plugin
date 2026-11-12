@@ -388,3 +388,51 @@ func TestDefaultsAllowWithoutAsking(t *testing.T) {
 		t.Error("a missing defaults file wasn't an error")
 	}
 }
+
+func TestGrantable(t *testing.T) {
+	for id, want := range map[string]bool{
+		"linux uid=1000 cgroup=/app exe=curl ns=host":                                true,
+		"linux uid=1000 cgroup=/app exe=bash ns=namespaced":                          true,
+		"linux uid=1000 cgroup=/app exe=unknown ns=unknown":                          false,
+		"linux uid=1001 cgroup=/app exe=unknown ns=unknown":                          false,
+		"linux uid=0 cgroup=/system.slice/nix-daemon.service exe=unknown ns=unknown": true,
+		"darwin uid=501 code=identifier \"com.apple.curl\" sandbox=false":            true,
+		"darwin unidentified": false,
+		"windows user=S-1-5-21-1 appcontainer= exe=c:\\windows\\system32\\curl.exe": true,
+		"windows unidentified exe=c:\\windows\\system32\\curl.exe":                  false,
+	} {
+		if got := Grantable(id); got != want {
+			t.Errorf("Grantable(%q) = %v", id, got)
+		}
+	}
+}
+
+// "Always allow" isn't offered to a caller that couldn't be inspected: should the answer come anyway, it lasts an hour
+// and isn't saved, and such a rule in allowed.json is ignored
+func TestUngrantableCallers(t *testing.T) {
+	h := newHarness(t)
+	hidden := "linux uid=1000 cgroup=/app exe=unknown ns=unknown"
+	r := h.check(hidden, "a.example")
+	h.prompt().reply <- AllowAlways
+	if !r.result(t) {
+		t.Fatal("refused after an allow")
+	}
+	if _, err := os.Stat(h.path); err == nil {
+		t.Error("the answer was saved")
+	}
+	h.advance(TempDuration)
+	h.check(hidden, "a.example")
+	h.prompt()
+
+	root := "linux uid=0 cgroup=/system.slice/nix-daemon.service exe=unknown ns=unknown"
+	if err := os.WriteFile(h.path, []byte(`[{"caller": "`+hidden+`", "domain": "b.example"}, {"caller": "`+root+`", "domain": "c.example"}]`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h.gate = h.reopen()
+	if !h.check(root, "c.example").result(t) {
+		t.Error("root's saved rule was dropped")
+	}
+	h.noPrompt()
+	h.check(hidden, "b.example")
+	h.prompt()
+}

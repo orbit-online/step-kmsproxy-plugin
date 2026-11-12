@@ -43,7 +43,7 @@ func AskUser(ctx context.Context, caller Caller, domains []string) (Answer, erro
 // default, which comes first, since a server that draws no buttons may answer with the first action: it dismisses, and
 // on COSMIC, which draws no buttons, opens dialog instead. When ctx ends the notification is closed
 func askOn(ctx context.Context, conn *dbus.Conn, caller Caller, domains []string,
-	dialog func(ctx context.Context, summary, body string) (Answer, error)) (Answer, error) {
+	dialog func(ctx context.Context, summary, body string, labels []string) (Answer, error)) (Answer, error) {
 	match := []dbus.MatchOption{dbus.WithMatchObjectPath(notifyPath), dbus.WithMatchInterface(notifyIface)}
 	if err := conn.AddMatchSignal(match...); err != nil {
 		return Dismissed, fmt.Errorf("Watch the notifications: %w", err)
@@ -66,9 +66,13 @@ func askOn(ctx context.Context, conn *dbus.Conn, caller Caller, domains []string
 		if cosmic {
 			text, defaultLabel = body+"\nClick to answer.", "Answer…"
 		}
-		always, temp, deny := randomKey(), randomKey(), randomKey()
-		keys := map[string]Answer{always: AllowAlways, temp: AllowTemp, deny: Deny}
-		actions := []string{"default", defaultLabel, always, labelAlways, temp, labelTemp, deny, labelDeny}
+		keys := map[string]Answer{}
+		actions := []string{"default", defaultLabel}
+		for _, label := range buttons(caller) {
+			key := randomKey()
+			keys[key] = answerFor(label)
+			actions = append(actions, key, label)
+		}
 		var id uint32
 		if err := server.CallWithContext(ctx, notifyIface+".Notify", 0, "kmsproxy", uint32(0), "security-medium",
 			escapeMarkup(summary), escapeMarkup(text), actions,
@@ -91,7 +95,7 @@ func askOn(ctx context.Context, conn *dbus.Conn, caller Caller, domains []string
 			continue
 		}
 		if key == "default" && cosmic {
-			return dialog(ctx, summary, body)
+			return dialog(ctx, summary, body, buttons(caller))
 		}
 		return keys[key], nil
 	}
@@ -126,10 +130,12 @@ func awaitAction(ctx context.Context, signals <-chan *dbus.Signal, owner string,
 }
 
 // zenity asks in a dialog, for servers that draw no buttons. It prints the label of the button clicked
-func zenity(ctx context.Context, summary, body string) (Answer, error) {
-	out, err := exec.CommandContext(ctx, "zenity", "--question", "--switch", "--no-markup", "--title=kmsproxy",
-		"--text="+summary+"\n\n"+body,
-		"--extra-button="+labelAlways, "--extra-button="+labelTemp, "--extra-button="+labelDeny).Output()
+func zenity(ctx context.Context, summary, body string, labels []string) (Answer, error) {
+	args := []string{"--question", "--switch", "--no-markup", "--title=kmsproxy", "--text=" + summary + "\n\n" + body}
+	for _, label := range labels {
+		args = append(args, "--extra-button="+label)
+	}
+	out, err := exec.CommandContext(ctx, "zenity", args...).Output()
 	var exit *exec.ExitError
 	if err != nil && !errors.As(err, &exit) {
 		return Dismissed, fmt.Errorf("Run zenity: %w", err)
