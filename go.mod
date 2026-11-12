@@ -8,6 +8,7 @@ require (
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.89.0
 	golang.org/x/sync v0.22.0
+	pgregory.net/rapid v1.3.0
 )
 
 require (

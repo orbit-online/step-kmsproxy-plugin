@@ -1,0 +1,91 @@
+# 2026/11/12 14:38:57.661141 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:38:57.661156 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:38:57.661164 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.661170 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:38:57.662391 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:38:57.662404 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.662409 [TestModel] [rapid] draw answer: 1
+# 2026/11/12 14:38:57.861697 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:38:57.861728 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.861744 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:38:57.862998 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:38:57.863010 [TestModel] [rapid] draw request: 1
+# 2026/11/12 14:38:57.864211 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:38:57.864227 [TestModel] nothing waits
+# 2026/11/12 14:38:57.864244 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:38:57.864255 [TestModel] no prompt
+# 2026/11/12 14:38:57.864265 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:38:57.864275 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.864284 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:38:57.865465 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:38:57.865490 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.865495 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:38:57.865543 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:38:57.865553 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.865559 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:38:57.865624 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:38:57.865632 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:38:57.865638 [TestModel] [rapid] draw answer: 0
+# 
+v0.4.8#5392295714138450493
+0x161304652fcbc6
+0x1b78f819b60e28
+0x2
+0x13fadfd0b6ffbb
+0x28ec0cc12b102
+0x1
+0x1264e4c47f4219
+0x1
+0x1bad9c5aafb996
+0x2
+0x179b56c5372191
+0x275c4237ba731
+0x0
+0x112947cfa1480a
+0x0
+0x78e259c353622
+0x1
+0xc7355dc4996a4
+0x1f1bde6ecf467f
+0x1
+0xfbff01d4e57b2
+0x1
+0xd2fc2a8abbc33
+0x0
+0xedd4fbe8b7f45
+0x131597cd6577f6
+0x3
+0xc724da4a3191c
+0x0
+0x1c4f51650e557a
+0x1d935f872eb4f5
+0x3
+0x3a865da1f81fa
+0x0
+0x13db0fa3fd7bd0
+0x1
+0x1911c966a121c2
+0x1
+0xf5d840849718f
+0x1
+0x180dbcd65dd0ad
+0x1371b1ded0307d
+0x1
+0x546612a213026
+0x1
+0x4a169c8ccee5b
+0x0
+0x2e237f54187b0
+0x199bbc78df1d35
+0x1
+0x11d45ab554db99
+0x1
+0x1bb09ec7a5c596
+0x1
+0x170d57fb4aed2b
+0x10b582cbaea2f9
+0x0
+0xb725711a3a2af
+0x0
+0x1fd7eeb467c1f
+0x0

@@ -1,0 +1,33 @@
+# 2026/11/12 14:47:06.096823 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:47:06.096826 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:47:06.096828 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:47:06.097954 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:47:06.097955 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:47:06.097956 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:47:06.099045 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:47:06.099046 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:47:06.099047 [TestModel] [rapid] draw answer: 2
+# 2026/11/12 14:47:06.299463 [TestModel] a reached y without the user allowing it
+# 
+v0.4.8#2348304032430091222
+0x1084210842108
+0x0
+0x1
+0x0
+0x0
+0x0
+0x0
+0x1084210842108
+0x1e62bbaa126321
+0x1
+0x15715c92f9aae1
+0x0
+0x3463906fd8b05
+0x1
+0x1f67aadd7275b8
+0xc541a8560c540
+0x0
+0x55955abbc37b5
+0x0
+0xe5e7b791018f3
+0x2

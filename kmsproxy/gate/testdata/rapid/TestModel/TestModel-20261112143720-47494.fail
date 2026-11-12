@@ -1,0 +1,992 @@
+# 2026/11/12 14:37:20.713425 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:20.713445 [TestModel] nothing waits
+# 2026/11/12 14:37:20.713462 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:20.713477 [TestModel] no prompt
+# 2026/11/12 14:37:20.713487 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:20.713501 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:20.713513 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:20.713522 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:20.714689 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:20.714701 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:20.714712 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:20.714718 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:20.715894 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:20.715902 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:20.715908 [TestModel] [rapid] draw answer: 1
+# 2026/11/12 14:37:20.915239 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:20.915251 [TestModel] [rapid] draw request: 0
+# 2026/11/12 14:37:20.916413 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:20.916438 [TestModel] nothing waits
+# 2026/11/12 14:37:20.916456 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:20.916477 [TestModel] nothing waits
+# 2026/11/12 14:37:20.916490 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:20.916501 [TestModel] no prompt
+# 2026/11/12 14:37:20.916512 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:20.916528 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:20.916537 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:20.916547 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:20.917764 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:20.917786 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:20.917799 [TestModel] [rapid] draw answer: 0
+# 2026/11/12 14:37:21.117087 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.117114 [TestModel] no prompt
+# 2026/11/12 14:37:21.117125 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.117133 [TestModel] no prompt
+# 2026/11/12 14:37:21.117140 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.117150 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.117157 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:21.118394 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.118408 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.118417 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.118427 [TestModel] [rapid] draw answer: 1
+# 2026/11/12 14:37:21.317648 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.317665 [TestModel] nothing waits
+# 2026/11/12 14:37:21.317688 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.317699 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.317705 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.317716 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:21.318936 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.318947 [TestModel] [rapid] draw request: 4
+# 2026/11/12 14:37:21.319044 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.319063 [TestModel] no prompt
+# 2026/11/12 14:37:21.319075 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.319088 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.319102 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.319112 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:21.319122 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:21.320311 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.320331 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.320343 [TestModel] [rapid] draw request: 5
+# 2026/11/12 14:37:21.321504 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.321516 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.321525 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:21.322670 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.322679 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.322686 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.322694 [TestModel] [rapid] draw answer: 0
+# 2026/11/12 14:37:21.521928 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.521946 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:21.521953 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:21.523127 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.523144 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:21.523153 [TestModel] [rapid] draw answer: 2
+# 2026/11/12 14:37:21.722362 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.722381 [TestModel] nothing waits
+# 2026/11/12 14:37:21.722392 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.722399 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.722404 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:21.723673 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.723680 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.723686 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:21.723810 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.723834 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.723847 [TestModel] [rapid] draw answer: 0
+# 2026/11/12 14:37:21.924266 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.924291 [TestModel] no prompt
+# 2026/11/12 14:37:21.924300 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.924305 [TestModel] nothing waits
+# 2026/11/12 14:37:21.924312 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.924317 [TestModel] nothing waits
+# 2026/11/12 14:37:21.924324 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.924329 [TestModel] no prompt
+# 2026/11/12 14:37:21.924334 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:21.924341 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.924345 [TestModel] no prompt
+# 2026/11/12 14:37:21.924349 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:21.924354 [TestModel] nothing waits
+# 2026/11/12 14:37:21.924359 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.924364 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.924368 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:21.925545 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.925561 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:21.925573 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:21.926832 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:21.926839 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:21.926844 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:21.926898 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:21.926909 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:21.926916 [TestModel] [rapid] draw answer: 3
+# 2026/11/12 14:37:22.125221 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.125238 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.125246 [TestModel] [rapid] draw request: 12
+# 2026/11/12 14:37:22.125359 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.125398 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.125413 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.125427 [TestModel] [rapid] draw answer: 1
+# 2026/11/12 14:37:22.126383 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.126405 [TestModel] nothing waits
+# 2026/11/12 14:37:22.126421 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.126432 [TestModel] nothing waits
+# 2026/11/12 14:37:22.126444 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.126454 [TestModel] no prompt
+# 2026/11/12 14:37:22.126463 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.126472 [TestModel] nothing waits
+# 2026/11/12 14:37:22.126481 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.126495 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.126501 [TestModel] nothing waits
+# 2026/11/12 14:37:22.126509 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.126520 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.126528 [TestModel] nothing waits
+# 2026/11/12 14:37:22.126535 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.126548 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.126558 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.126638 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.127857 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.127867 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.127873 [TestModel] [rapid] draw answer: 3
+# 2026/11/12 14:37:22.327127 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.327151 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.327164 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:22.328361 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.328375 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.328383 [TestModel] [rapid] draw answer: 3
+# 2026/11/12 14:37:22.527644 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.527665 [TestModel] nothing waits
+# 2026/11/12 14:37:22.527674 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.527684 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.527689 [TestModel] no prompt
+# 2026/11/12 14:37:22.527694 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.527699 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.527705 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.528911 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.528926 [TestModel] no prompt
+# 2026/11/12 14:37:22.528934 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.528940 [TestModel] no prompt
+# 2026/11/12 14:37:22.528946 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.528951 [TestModel] nothing waits
+# 2026/11/12 14:37:22.528956 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.528961 [TestModel] nothing waits
+# 2026/11/12 14:37:22.528966 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.528970 [TestModel] no prompt
+# 2026/11/12 14:37:22.528976 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.528980 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.528985 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.530123 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.530134 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.530140 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.530146 [TestModel] nothing waits
+# 2026/11/12 14:37:22.530151 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.530155 [TestModel] nothing waits
+# 2026/11/12 14:37:22.530161 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.530165 [TestModel] nothing waits
+# 2026/11/12 14:37:22.530183 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.530186 [TestModel] no prompt
+# 2026/11/12 14:37:22.530191 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.530196 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.530200 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.531327 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.531339 [TestModel] nothing waits
+# 2026/11/12 14:37:22.531348 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.531353 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.531360 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.532501 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.532508 [TestModel] no prompt
+# 2026/11/12 14:37:22.532515 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.532521 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.532526 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:22.533695 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.533703 [TestModel] [rapid] draw request: 19
+# 2026/11/12 14:37:22.534845 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.534850 [TestModel] nothing waits
+# 2026/11/12 14:37:22.534855 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.534862 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.534888 [TestModel] no prompt
+# 2026/11/12 14:37:22.534893 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.534897 [TestModel] nothing waits
+# 2026/11/12 14:37:22.534901 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.534905 [TestModel] no prompt
+# 2026/11/12 14:37:22.534910 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.534915 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.534918 [TestModel] no prompt
+# 2026/11/12 14:37:22.534922 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.534926 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.534930 [TestModel] [rapid] draw domain: "y"
+# 2026/11/12 14:37:22.536035 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.536039 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.536043 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:22.537137 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.537144 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.537149 [TestModel] [rapid] draw answer: 2
+# 2026/11/12 14:37:22.736429 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.736452 [TestModel] no prompt
+# 2026/11/12 14:37:22.736472 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.736485 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.736495 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:22.737742 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.737756 [TestModel] nothing waits
+# 2026/11/12 14:37:22.737769 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.737785 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.737794 [TestModel] no prompt
+# 2026/11/12 14:37:22.737802 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.737810 [TestModel] nothing waits
+# 2026/11/12 14:37:22.737820 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.737828 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.737836 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:22.738998 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.739010 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.739015 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:22.740223 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.740231 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.740236 [TestModel] [rapid] draw answer: 2
+# 2026/11/12 14:37:22.938563 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.938589 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.938603 [TestModel] [rapid] draw request: 24
+# 2026/11/12 14:37:22.938727 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.938754 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.938765 [TestModel] nothing waits
+# 2026/11/12 14:37:22.938778 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.938790 [TestModel] no prompt
+# 2026/11/12 14:37:22.938799 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:22.938811 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.938820 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:22.938828 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:22.940052 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:22.940067 [TestModel] nothing waits
+# 2026/11/12 14:37:22.940080 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:22.940090 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.940098 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:22.941218 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:22.941228 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:22.941234 [TestModel] [rapid] draw answer: 0
+# 2026/11/12 14:37:23.140464 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.140482 [TestModel] no prompt
+# 2026/11/12 14:37:23.140498 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.140508 [TestModel] no prompt
+# 2026/11/12 14:37:23.140517 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.140530 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.140541 [TestModel] no prompt
+# 2026/11/12 14:37:23.140550 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.140558 [TestModel] no prompt
+# 2026/11/12 14:37:23.140566 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.140577 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.140587 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.140594 [TestModel] no prompt
+# 2026/11/12 14:37:23.140603 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.140610 [TestModel] nothing waits
+# 2026/11/12 14:37:23.140618 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.140630 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.140637 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:23.140645 [TestModel] [rapid] draw domain: "z"
+# 2026/11/12 14:37:23.141892 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.141917 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.141931 [TestModel] no prompt
+# 2026/11/12 14:37:23.141945 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.141956 [TestModel] nothing waits
+# 2026/11/12 14:37:23.141964 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.141973 [TestModel] no prompt
+# 2026/11/12 14:37:23.141983 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.141991 [TestModel] no prompt
+# 2026/11/12 14:37:23.142003 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.142012 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:23.142020 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:23.143245 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.143264 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:23.143276 [TestModel] [rapid] draw answer: 2
+# 2026/11/12 14:37:23.342508 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.342532 [TestModel] no prompt
+# 2026/11/12 14:37:23.342548 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.342558 [TestModel] no prompt
+# 2026/11/12 14:37:23.342567 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.342577 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:23.342585 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:23.343766 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.343775 [TestModel] [rapid] draw request: 29
+# 2026/11/12 14:37:23.344930 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.344935 [TestModel] no prompt
+# 2026/11/12 14:37:23.344941 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.344947 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.344953 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.344957 [TestModel] no prompt
+# 2026/11/12 14:37:23.344961 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.344965 [TestModel] no prompt
+# 2026/11/12 14:37:23.344969 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.344973 [TestModel] nothing waits
+# 2026/11/12 14:37:23.344977 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.344981 [TestModel] nothing waits
+# 2026/11/12 14:37:23.344985 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.344989 [TestModel] no prompt
+# 2026/11/12 14:37:23.344993 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.344996 [TestModel] nothing waits
+# 2026/11/12 14:37:23.345000 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.345003 [TestModel] no prompt
+# 2026/11/12 14:37:23.345007 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.345010 [TestModel] no prompt
+# 2026/11/12 14:37:23.345013 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.345017 [TestModel] no prompt
+# 2026/11/12 14:37:23.345020 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.345025 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.345031 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.345037 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.345040 [TestModel] [rapid] draw caller: "b"
+# 2026/11/12 14:37:23.345044 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:23.346198 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.346210 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.346216 [TestModel] [rapid] draw request: 30
+# 2026/11/12 14:37:23.347323 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.347329 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:23.347333 [TestModel] [rapid] draw domain: "x"
+# 2026/11/12 14:37:23.348457 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.348471 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.348478 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:23.348485 [TestModel] [rapid] draw answer: 1
+# 2026/11/12 14:37:23.547787 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.547817 [TestModel] [rapid] draw action: "expire"
+# 2026/11/12 14:37:23.547835 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.547848 [TestModel] no prompt
+# 2026/11/12 14:37:23.547867 [TestModel] [rapid] draw action: "leave"
+# 2026/11/12 14:37:23.547878 [TestModel] nothing waits
+# 2026/11/12 14:37:23.547888 [TestModel] [rapid] draw action: "answer"
+# 2026/11/12 14:37:23.547897 [TestModel] no prompt
+# 2026/11/12 14:37:23.547905 [TestModel] [rapid] draw action: "arrive"
+# 2026/11/12 14:37:23.547915 [TestModel] [rapid] draw caller: "a"
+# 2026/11/12 14:37:23.547924 [TestModel] [rapid] draw domain: "y"
+# 
+v0.4.8#16871384696274910551
+0x2a705f0ef2be6
+0xdf7ebe059b938
+0x3
+0x1c42f2e222c52c
+0x0
+0xcf402b23633bf
+0x2
+0x1e33bf7bc2ed65
+0x2a04789351107
+0x1
+0x64cbf1464cf3f
+0x1
+0x8c2eaa60f2316
+0x2
+0x1e07c7d4202bc3
+0x1373296bdb0a04
+0x2
+0xc91dc588c27eb
+0x36fa534ae22e4
+0x1
+0x105646dfb5accd
+0x0
+0x1ce7c4d483a720
+0x2
+0x200dd172fc3e9
+0x263e9362c7bd9
+0x0
+0x23ebe24472818
+0x0
+0x1243df399adeea
+0x1
+0x149ff140b42444
+0x8b9bd2bda0718
+0x3
+0xb58e2e5de48d
+0x0
+0x1a92f4009e932
+0x1a8b82747ad0a8
+0x3
+0x1a3a95f5217cd1
+0x3
+0xe44b27f6d76ad
+0x0
+0x1bf68f83807a23
+0x2
+0x1a386804992e50
+0xe563d4e0d47e9
+0x1
+0x87158c32f8130
+0x1
+0xd1484bd342ca
+0x1
+0x9d77400137c93
+0x1d1fa7e204c762
+0x0
+0xa83c8b5493beb
+0x0
+0x1e9aa1eab9d3b4
+0x0
+0x12d46b1aed0fee
+0x1c6d949cbdbdc9
+0x0
+0x163603ec5a03f4
+0x0
+0x12cd94c35186d4
+0x1
+0x9e87906c9226b
+0x0
+0x1eef3856623ac2
+0x0
+0x1ce02c346d4cd5
+0xe4dcef5362e92
+0x2
+0x5dd592b68f83b
+0x1a693d4fc5a03e
+0x0
+0xe34b1f3d383f7
+0x0
+0x1ea23d6e34c344
+0x1
+0x1931c6ea8cb7a1
+0x1f9b8b96dca5c5
+0xffffffffffffffff
+0xf03c7e6564744
+0x2
+0x1dbd2a8abd7c95
+0x7a5c7f63ec8f5
+0x1
+0x19cfe445280f3a
+0x0
+0x1e031852d6a23a
+0x3
+0x3
+0x2
+0x67c65f5bfd4a2
+0xc18546a3a00bf
+0x3
+0x9d6cc2a83da8
+0x0
+0x78aed8e856b5e
+0x928817983e3bc
+0x0
+0x838a5c52e82a2
+0x2
+0x1783e00737565a
+0x8b071319f138f
+0x2
+0xdd7bd0463a5c4
+0xf893889a82bf3
+0x1
+0x1031b0db6bc130
+0x1
+0x9dd6475f14623
+0x3
+0x3
+0x2
+0x13baf0811212e5
+0x1370fc0ecd1e92
+0x2
+0x10d0dccff0e59d
+0x1324a2c655998b
+0x3
+0x79a371faa3a1a
+0x0
+0xf459c145f9c5e
+0x252dedd17edf6
+0x1
+0x183c8411166a31
+0x0
+0x6062c594279cd
+0x1
+0x1c8905a1fa9bb5
+0x150d784e970688
+0x2
+0xdcfb8a57361cc
+0x106fcf96324d97
+0x0
+0x173b72f8db460a
+0x0
+0x3c14cec0e3227
+0x0
+0x1cfa8116f14eb5
+0x1f25abca4cf50
+0x1
+0x1177cc7d3cfbae
+0x1
+0xcf8da9664f503
+0x3
+0x0
+0x1b124b1adf6c52
+0x839d9f409b8d6
+0x0
+0x127037277ee445
+0x0
+0xc69519795e5b3
+0x2
+0x1777aae518d1cb
+0x1a41a8b5e1c55b
+0x3
+0x21af22ae98af1
+0x1
+0x88d6a86c448de
+0x0
+0xe08d55d38b6f2
+0x3
+0x2
+0x1c42a1ad1797af
+0x8198e1406d3b1
+0x1
+0xcd3ff3bb84b45
+0x0
+0x1a2be5ca70ca28
+0x3
+0x2
+0x9870fa2cfd719
+0x114b58fde47144
+0x0
+0x3b565d7b6b163
+0x0
+0xbdb72a834f1c3
+0x0
+0x389f71c5fd974
+0xe5d7e32a0e7e3
+0x0
+0xb2f9afe3c33c1
+0x3
+0x14638658f5f933
+0x3
+0x9c506ef5600ce
+0x0
+0x1b240e66f8ef43
+0x2
+0x1cdc4ceb243ab4
+0x16648c6dda0f0c
+0x0
+0x19b6d745bd321a
+0x3
+0x1cce58b6870447
+0x1
+0x467830027b120
+0x0
+0x7e18c8a438942
+0x1
+0x4be3bd993c322
+0xa6144ef03f2c1
+0x1
+0x27f576879eeea
+0x1
+0xbcb9912492423
+0x2
+0x14e773c913b11a
+0x99be2c01836d9
+0x1
+0x1852133478da5c
+0x1
+0x24010aaf05041
+0x1
+0x18acf69cd0e93b
+0x150fe8d66dbc4f
+0x0
+0xaea9d267a15da
+0x0
+0x1c75ba12d38a41
+0x3
+0x1018956e0f38b2
+0x10ff4dd35d14d8
+0x2
+0xd27a180ca3e25
+0xbfe2d0ad1c3dd
+0x3
+0xfdb6211051d40
+0x1
+0x18ef759647f2a0
+0x187b0209c7f317
+0x2
+0x5800c94c0db92
+0x249fc82de2689
+0x0
+0x1cdc9b07183f0b
+0x0
+0x15d76a9d60771e
+0x1
+0x1f2c02680c51ec
+0x1fa447aaaf2f23
+0xffffffffffffffff
+0xe3e9d3d9c7953
+0x3
+0x19d143f51e84ff
+0x0
+0x1a43a8eaf34d05
+0x3
+0x5e045ee7b7556
+0x2
+0x16af522579dfb3
+0xf1627010faa73
+0x3
+0x1957c0f4881fee
+0x2
+0xd10258506b6d4
+0x1b397a3ae518c8
+0x3
+0xf0082b1af440e
+0x2
+0x65ef9319cfdcc
+0x7d1bb8077ae0
+0x1
+0x40655f8a75aca
+0x1
+0x12a5960da162fa
+0x1
+0xdf2d655a2ea6c
+0x13efa958a1a292
+0x0
+0x127ea339e86c9b
+0x0
+0x1a279f38467e28
+0x3
+0x11ae8765c71223
+0x3243c4066c208
+0x1
+0x11e6fe41de292
+0x1
+0x8d4ec5174f045
+0x2
+0x19ef9f8ccff15f
+0x465556a82924b
+0x0
+0x16493cf77b649c
+0x0
+0xe8880e0ca8e06
+0x3
+0x443088b1a4516
+0x12d66e623d54ad
+0x3
+0x15ea646af64a80
+0x2
+0xb7d3b662a4b44
+0x17637f83bf25f1
+0x0
+0x1e6a26cbf37be4
+0x1
+0x87d3d2e07b07f
+0x1
+0x11c909850037a2
+0x3
+0x1
+0x1052f6d515fb30
+0x7ab3e8bcb88cb
+0x0
+0x4c9dcb73fa97d
+0x0
+0xb51bb9b56fa50
+0x3
+0x3f0b92232f2a0
+0x3
+0x2f53ff9032e57
+0x0
+0xa6432c442447f
+0x1
+0x8ca3bc22137f2
+0x0
+0x13ac1e5eb1494d
+0x1
+0x4408e937ef07a
+0x189d02bbd72734
+0x2
+0x1c80de561e101c
+0x183b08261f1a77
+0x2
+0xd204f338f75b8
+0x1e7d5e0f36fb3c
+0x3
+0x1216fcb2ffa97a
+0x3
+0xdcf2063f4acac
+0x3
+0x27c4bb1fd2d52
+0x0
+0x4cfdccca4a3e8
+0x1
+0x187094888f1681
+0x1
+0x1340bf0b1da588
+0x3
+0x1
+0x17f8330032451b
+0x4de9113cc4c26
+0x3
+0x10d2983b3dc382
+0x1
+0x514a5236c389
+0x1
+0x1cd0bac37e3a47
+0x3
+0x3
+0x1
+0xc992d87a06013
+0xe191c24f1b78b
+0x0
+0x163bde5240298d
+0x1
+0x7eb66fe003234
+0x0
+0x1a5eb852680b53
+0x2
+0xa408503189a54
+0x188816ae44ef4b
+0x3
+0xd52dc9fe29bd1
+0x0
+0x1c50b869f46055
+0xf0bf4b97cb452
+0x3
+0x1a09ab27ef3345
+0x2
+0x11b765cbc8b9bb
+0x1dce6d58fd4a2f
+0x0
+0x124397c92d05fd
+0x3
+0xf50acaea1c71d
+0x0
+0x1bab19c0477d87
+0x2
+0x9fd0a3dc54264
+0x1b8bdc0103a50b
+0x0
+0x579634f56835a
+0x1
+0xe1e377a80db87
+0x1
+0xa4184725bdf4
+0x1
+0x1ad5689021aeac
+0x6a82f79040ef
+0x1
+0x1d94cba44734ff
+0x0
+0x1697bf497baa9d
+0x0
+0x47ade7e651a06
+0x1e34077ae708de
+0x0
+0x123fe387cd1128
+0x0
+0x6daf8b6b04e88
+0x2
+0x7e6a8dff218aa
+0x11426e58b11d80
+0x0
+0xecc0b94bb8ba5
+0x1
+0x171b9ac85d0167
+0x0
+0x33e60795fbed3
+0x0
+0x478caf4e48216
+0x532fe32a94ec6
+0x3
+0x1cf41b1dfced79
+0x2
+0xe4fece7d3b08e
+0x123cbd7ea3b9c9
+0x0
+0x1fb7ba48984cc1
+0xffffffffffffffff
+0xcacaa5e2d5fa9
+0x1
+0x1915a757a7f719
+0x1
+0xc2e7c325d8b0b
+0x0
+0x7efc19c1b9a6b
+0x156b6178d08cb1
+0x1
+0xcf735df09cc14
+0x0
+0x11d7bf4f3aa5a5
+0x2
+0x10144ac892c62f
+0x1831b373bec35b
+0x0
+0x1b6e2295a98c12
+0x1
+0x1145f1af19812b
+0x2
+0x13000dd4b3ecc2
+0x5c0d583201ced
+0x2
+0x1768e13814abc0
+0x78c29781838a9
+0x3
+0xaf07b27bffee
+0x0
+0xd47b03bfeb44d
+0x1447b420cd3329
+0x2
+0x655686a4d3b9a
+0x5fe2755ed474b
+0x3
+0x190d1dada11041
+0x0
+0x641ff0a9cc98e
+0x2
+0x14b30c490646cf
+0x963685aca499e
+0x1
+0xd285ab76e678f
+0x1
+0x7a1556c72c0cd
+0x2
+0xbf98a8813960b
+0x71cb7dc32090b
+0x3
+0x75c19c7b0507
+0x1
+0x488f5ba02fa98
+0x0
+0x8c7e9b02da6bb
+0x3
+0x0
+0x169193886a05d0
+0x13028384b13185
+0x0
+0xcde2ee5acfa1a
+0x0
+0x97b77d8342723
+0x0
+0x188dc63199ff1b
+0x1ebc2d5afb5e87
+0x0
+0x37d4b2182c872
+0x0
+0x16b525e3a0d67b
+0x2
+0x1b795f619ac398
+0x28dea1fddd6e9
+0x0
+0x221e1c595c74
+0x0
+0x1980a982a3e921
+0x2
+0xc3acdab03a338
+0x77b1cfd5cfe58
+0x2
+0x875d105302201
+0x12322a99b03088
+0x0
+0x9dec1ae86f1b6
+0x3
+0x1a26cbc70d331f
+0x2
+0x1ac84eb2302fde
+0x86d7199f9a14b
+0x1
+0x47a1e73cbd0a9
+0x1
+0x14da8a158170d0
+0x2
+0x195e22230ac99e
+0x1b727f320fac7a
+0x2
+0x142f5aacb34233
+0x2804888b2cf79
+0x0
+0x900e802fbaaf4
+0x3
+0x18c5567632f55f
+0x0
+0x3055e3a5d824
+0x0
+0x19b6db37b7c1b9
+0x1
+0x3e969d9e7deb1
+0x1
+0xd23e06de6c4a9
+0x3
+0x0
+0x23e5d60012f96
+0xf6ca9c4ca76d9
+0x0
+0x1030f1e941e676
+0x0
+0x1a579c4690d511
+0x2
+0x16d0e35610325a
+0x9b57fc54a8035
+0x0
+0x1891f0cd53d71
+0x0
+0x12ca8f8e75815a
+0x1
+0xb1ac5295b6610
+0x0
+0x1f2031666814dd
+0x0
+0x5432cab999387
+0x1f6e691f0cabfb
+0xffffffffffffffff
+0x38b675f362f7c
+0x0
+0x6c6ffd55e4e2b
+0x173268d382f9b5
+0x0
+0xdb2a89fff1849
+0x2
+0x169abdeb3ed28a
+0x1633e314de17fc
+0x2
+0x15e4520f3ed2e4
+0x4ee67ce8e0696
+0x0
+0x728ade7307070
+0x0
+0x1d1b69b5c0ca8d
+0x3
+0x6d9deb4ddcec9
+0x3
+0x296aaed03430f
+0x0
+0x112734dee7a89e
+0x3
+0x3f501965b3f75
+0x0
+0x141290d3404b0
+0x0
+0x197d769a32ee89
+0x0
+0x191a2e62d347a2
+0x2
+0x1a58b5e454dfc1
+0x8733f946d7769
+0x2
+0x1b21bd3d922219
+0x8c6a3c5c7c50e
+0x2
+0x1e48d6ef1702ad
+0x17411d573d1248
+0x1
+0xaa69497e2eb61
+0x1
+0x73160c486e5e2
+0x0
+0x87bfcb5db1065
+0x17983d7d673f81
+0x2
+0x8b3987227a83f
+0x8359433055452
+0x3
+0xff3b782a46256
+0x0
+0x188e093dc6cbeb
+0xce1dd7832e9e5
+0x1
+0x1c20ef156fc21d
+0x0
+0x71a489c81f79
+0x0
+0xb37c07b28616b
+0x93830b03d9f31
+0x2
+0x681738f232de7
+0x16c0f725bbe27b
+0x0
+0x1dbfdc2896842e
+0x0
+0xee09f636ad219
+0x1
+0x2cd2f41f35e79
+0x11d9f2c52a147c
+0x2
+0x1167836b8110eb
+0x6f774b5c15d74
+0x2
+0x1085fc24206af9
+0xae208b07519c7
+0x0
+0x1e36b11bd04b76
+0x3
+0x19a3d0c20d477d
+0x0
+0x11f0191f8d18cb
+0x1
+0xf71b2cc91cd95
+0x0
+0x6413b19b82e14
+0x1
+0x8a9695ef98f2
