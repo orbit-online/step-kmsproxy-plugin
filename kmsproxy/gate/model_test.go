@@ -78,7 +78,7 @@ type modelRun struct {
 func newModelRun(t *rapid.T, ln net.Listener, path string) *modelRun {
 	m := &modelRun{t: t, ln: ln, clock: time.Unix(1_000_000, 0), callers: map[string]string{},
 		open: map[string][]*asked{}, consent: map[[2]string]bool{}}
-	g, err := New(path, func(local, remote string) (Caller, error) {
+	g, err := New(path, nil, func(local, remote string) (Caller, error) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		return Caller{ID: m.callers[remote]}, nil

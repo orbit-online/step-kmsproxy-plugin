@@ -60,11 +60,13 @@ type Gate struct {
 	ask      Ask
 	now      func() time.Time
 
-	mu      sync.Mutex
-	always  map[rule]bool
-	allowed map[rule]time.Time
-	denied  map[rule]time.Time
-	callers map[string]*callerState
+	mu sync.Mutex
+	// Read-only rules from the --allow files
+	defaults map[rule]bool
+	always   map[rule]bool
+	allowed  map[rule]time.Time
+	denied   map[rule]time.Time
+	callers  map[string]*callerState
 }
 
 type callerState struct {
@@ -84,27 +86,42 @@ type prompt struct {
 	cancel context.CancelFunc
 }
 
-// New loads the "Always allow" rules from path, which needn't exist yet
-func New(path string, identify Identify, ask Ask) (*Gate, error) {
+// New loads the "Always allow" rules from path, which needn't exist yet, and the read-only rules in defaults, which
+// must. Both hold a JSON list of {"caller", "domain"}
+func New(path string, defaults []string, identify Identify, ask Ask) (*Gate, error) {
 	g := &Gate{
 		path: path, identify: identify, ask: ask, now: time.Now,
-		always: map[rule]bool{}, allowed: map[rule]time.Time{}, denied: map[rule]time.Time{},
+		defaults: map[rule]bool{}, always: map[rule]bool{}, allowed: map[rule]time.Time{}, denied: map[rule]time.Time{},
 		callers: map[string]*callerState{},
 	}
+	for _, p := range defaults {
+		if err := readRules(p, g.defaults); err != nil {
+			return nil, err
+		}
+	}
+	if err := readRules(path, g.always); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
+	return g, nil
+}
+
+func readRules(path string, into map[rule]bool) error {
 	raw, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return g, nil
-	} else if err != nil {
-		return nil, fmt.Errorf("Read the allowed callers: %w", err)
+	if err != nil {
+		return fmt.Errorf("Read the allowed callers: %w", err)
 	}
 	var rules []rule
 	if err := json.Unmarshal(raw, &rules); err != nil {
-		return nil, fmt.Errorf("Parse the allowed callers in %s: %w", path, err)
+		return fmt.Errorf("Parse the allowed callers in %s: %w", path, err)
 	}
 	for _, r := range rules {
-		g.always[r] = true
+		into[rule{r.Caller, normalizeDomain(r.Domain)}] = true
 	}
-	return g, nil
+	return nil
+}
+
+func normalizeDomain(domain string) string {
+	return strings.TrimSuffix(strings.ToLower(domain), ".")
 }
 
 // Check says whether the caller of conn may reach domain, asking the user when no rule decides. It returns early with
@@ -115,7 +132,7 @@ func (g *Gate) Check(ctx context.Context, conn *PeekConn, domain string) bool {
 		slog.Warn("Refused an unidentified caller", "client", conn.RemoteAddr(), "domain", domain, "error", err)
 		return false
 	}
-	domain = strings.TrimSuffix(strings.ToLower(domain), ".")
+	domain = normalizeDomain(domain)
 	log := slog.With("caller", caller.ID, "domain", domain)
 	r := rule{caller.ID, domain}
 
@@ -171,7 +188,7 @@ func (g *Gate) Check(ctx context.Context, conn *PeekConn, domain string) bool {
 // decide applies a live rule to r. Allow rules come first, as an answer replaces the opposite rule
 func (g *Gate) decide(r rule) (allowed, decided bool) {
 	now := g.now()
-	if g.always[r] || now.Before(g.allowed[r]) {
+	if g.defaults[r] || g.always[r] || now.Before(g.allowed[r]) {
 		return true, true
 	}
 	if now.Before(g.denied[r]) {

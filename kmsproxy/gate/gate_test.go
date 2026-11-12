@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -44,7 +46,7 @@ func newHarness(t *testing.T) *harness {
 }
 
 func (h *harness) reopen() *Gate {
-	g, err := New(h.path, func(local, remote string) (Caller, error) {
+	g, err := New(h.path, nil, func(local, remote string) (Caller, error) {
 		h.mu.Lock()
 		defer h.mu.Unlock()
 		id, ok := h.callers[remote]
@@ -281,7 +283,7 @@ func TestHangUpKeepsAPromptOthersWaitOn(t *testing.T) {
 // The user answers a withdrawn prompt: the rule applies to a request waiting on the next one
 func TestLateAnswerAppliesItsRule(t *testing.T) {
 	h := newHarness(t)
-	g, err := New(h.path, h.gate.identify, func(ctx context.Context, caller Caller, domains []string) (Answer, error) {
+	g, err := New(h.path, nil, h.gate.identify, func(ctx context.Context, caller Caller, domains []string) (Answer, error) {
 		a := &asked{ctx: ctx, caller: caller.ID, domains: domains, reply: make(chan Answer, 1)}
 		h.prompts <- a
 		return <-a.reply, nil // ignores ctx, as a click in flight would
@@ -353,5 +355,36 @@ func TestPeekNoticesHangUp(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("WaitClosed didn't return")
+	}
+}
+
+func TestDefaultsAllowWithoutAsking(t *testing.T) {
+	h := newHarness(t)
+	defaults := filepath.Join(t.TempDir(), "defaults.json")
+	if err := os.WriteFile(defaults, []byte(`[{"caller": "curl", "domain": "A.example."}]`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	g, err := New(h.path, []string{defaults}, h.gate.identify, h.gate.ask)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.now = h.gate.now
+	h.gate = g
+	if !h.check("curl", "a.example").result(t) {
+		t.Fatal("a default rule didn't allow")
+	}
+	h.noPrompt()
+	r := h.check("curl", "b.example")
+	h.prompt().reply <- AllowAlways
+	r.result(t)
+	saved, err := os.ReadFile(h.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(saved), "a.example") {
+		t.Errorf("a default rule was saved with the user's answers: %s", saved)
+	}
+	if _, err := New(h.path, []string{filepath.Join(t.TempDir(), "missing.json")}, h.gate.identify, h.gate.ask); err == nil {
+		t.Error("a missing defaults file wasn't an error")
 	}
 }

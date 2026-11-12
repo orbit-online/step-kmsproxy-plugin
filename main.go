@@ -45,6 +45,7 @@ type Params struct {
 	RevPortMap         []string `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
 	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
 	NoGate             bool     `name:"no-gate" help:"Don't ask the user before a local caller uses the client certificates for a domain"`
+	AllowPaths         []string `name:"allow" help:"JSON list of {caller, domain} pairs the gate allows without asking, can be specified multiple times" type:"existingfile"`
 	Verbose            bool     `help:"Turn on verbose logging"`
 }
 
@@ -84,7 +85,7 @@ func startProxy(parentCtx context.Context, params Params) error {
 		if err != nil {
 			return err
 		}
-		if callerGate, err = gate.New(filepath.Join(configDir, "kmsproxy", "allowed.json"), gate.IdentifyCaller, gate.AskUser); err != nil {
+		if callerGate, err = gate.New(filepath.Join(configDir, "kmsproxy", "allowed.json"), params.AllowPaths, gate.IdentifyCaller, gate.AskUser); err != nil {
 			return err
 		}
 	}

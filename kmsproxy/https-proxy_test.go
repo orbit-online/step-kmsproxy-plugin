@@ -84,7 +84,7 @@ func newGatedTestEnv(t *testing.T, answer gate.Answer) *testEnv {
 	identify := func(local, remote string) (gate.Caller, error) {
 		return gate.Caller{ID: "test", Description: "test"}, nil
 	}
-	callerGate, err := gate.New(filepath.Join(dir, "allowed.json"), identify,
+	callerGate, err := gate.New(filepath.Join(dir, "allowed.json"), nil, identify,
 		func(ctx context.Context, caller gate.Caller, domains []string) (gate.Answer, error) {
 			env.asked <- askedGate{ctx, domains}
 			if answer == gate.Dismissed {

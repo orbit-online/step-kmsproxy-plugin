@@ -65,7 +65,9 @@ What counts as one caller depends on the OS:
 - Windows: the user, AppContainer and executable of the client process. The
   question is a task dialog.
 
-`--no-gate` turns this off.
+`--allow FILE` adds read-only rules in the same format, e.g. a default list
+shipped with the system; they aren't written to `allowed.json`. `--no-gate`
+turns the gate off.
 
 The model of the rules and prompts is in [`models/gate.als`](models/gate.als);
 `models/run.sh` checks it.
