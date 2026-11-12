@@ -42,6 +42,34 @@ workstations).
    Or Gnome Control Center:  
    ![[Proxy configuration in Ubuntu]](examples/ubuntu-proxy-settings.png?raw=true)
 
+## Who may use the proxy
+
+The proxy listens on localhost, so any local process could otherwise use the
+client certificates. Before a caller reaches a domain for the first time, the
+proxy asks: "Always allow", "Allow for 1 hour" or "Deny" (remembered for an
+hour). Requests from one caller wait for one question, which lists every domain
+they wait on. A request gives up after 2 minutes or when its client hangs up.
+"Always allow" answers are kept in `<config dir>/kmsproxy/allowed.json`
+(`~/.config` on Linux), one caller and domain per entry.
+
+What counts as one caller depends on the OS:
+
+- Linux: the uid and cgroup of the client socket, from sock_diag, with instance
+  ids dropped (`app-gnome-firefox-1234.scope` is `app-gnome-firefox.scope`),
+  and whether the process runs in a user or mount namespace other than the
+  proxy. The question is a desktop notification; on COSMIC, which shows no
+  buttons, a click on it opens a zenity dialog.
+- macOS: the code signature (designated requirement) and App Sandbox flag of
+  the client process, found with `lsof` and `codesign`. The question is an
+  alert from `osascript`.
+- Windows: the user, AppContainer and executable of the client process. The
+  question is a task dialog.
+
+`--no-gate` turns this off.
+
+The model of the rules and prompts is in [`models/gate.als`](models/gate.als);
+`models/run.sh` checks it.
+
 ## Usage
 
 ### Kubernetes

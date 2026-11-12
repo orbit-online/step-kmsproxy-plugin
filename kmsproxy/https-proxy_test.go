@@ -25,23 +25,36 @@ import (
 	"time"
 
 	path_poller "github.com/orbit-online/go-path-poller"
+	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy/gate"
 )
 
 type testEnv struct {
 	proxy        *Proxy
 	proxyAddr    string
+	revAddr      string
+	asked        chan askedGate
 	proxyRoots   *x509.CertPool
 	upstream     *httptest.Server
 	upstreamConn atomic.Int32
 }
 
-// Starts an mTLS upstream and an HTTPS proxy holding a client cert for it.
+// What the gate asked the user, and its answer
+type askedGate struct {
+	ctx     context.Context
+	domains []string
+}
+
+// Starts an mTLS upstream and an HTTPS proxy holding a client cert for it, whose gate answers every question with answer
 func newTestEnv(t *testing.T) *testEnv {
+	return newGatedTestEnv(t, gate.AllowTemp)
+}
+
+func newGatedTestEnv(t *testing.T, answer gate.Answer) *testEnv {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	dir := t.TempDir()
-	env := &testEnv{}
+	env := &testEnv{asked: make(chan askedGate, 16)}
 
 	env.upstream = httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, r.TLS.PeerCertificates[0].Subject.CommonName)
@@ -67,32 +80,64 @@ func newTestEnv(t *testing.T) *testEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
+	callerGate, err := gate.New(filepath.Join(dir, "allowed.json"), gate.IdentifyCaller,
+		func(ctx context.Context, caller gate.Caller, domains []string) (gate.Answer, error) {
+			env.asked <- askedGate{ctx, domains}
+			if answer == gate.Dismissed {
+				<-ctx.Done()
+			}
+			return answer, nil
+		})
+	if err != nil {
+		t.Fatal(err)
+	}
 	env.proxy, err = NewProxy(ctx,
 		filepath.Join(dir, "ca.key"), filepath.Join(dir, "ca.crt"),
 		[]string{filepath.Join(dir, "upstream.crt")},
 		[]string{filepath.Join(dir, "client.key")}, []string{filepath.Join(dir, "client.crt")},
-		false, nil, notifier)
+		false, nil, notifier, callerGate)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	env.proxyAddr = freeAddr(t)
+	go env.proxy.ServeHTTPSProxyRequests(ctx, env.proxyAddr)
+	env.revAddr = freeAddr(t)
+	upstreamPort := env.upstream.Listener.Addr().(*net.TCPAddr).Port
+	go env.proxy.ServeReverseProxyRequests(ctx, env.revAddr, []string{".kmsproxy.internal"},
+		map[string]int64{"localhost.kmsproxy.internal": int64(upstreamPort)})
+	for _, addr := range []string{env.proxyAddr, env.revAddr} {
+		for i := 0; ; i++ {
+			if c, err := net.Dial("tcp", addr); err == nil {
+				c.Close()
+				break
+			} else if i == 100 {
+				t.Fatal(err)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	return env
+}
+
+func freeAddr(t *testing.T) string {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	env.proxyAddr = fmt.Sprintf("localhost:%d", l.Addr().(*net.TCPAddr).Port)
-	l.Close()
-	go env.proxy.ServeHTTPSProxyRequests(ctx, env.proxyAddr)
-	for i := 0; ; i++ {
-		if c, err := net.Dial("tcp", env.proxyAddr); err == nil {
-			c.Close()
-			break
-		} else if i == 100 {
-			t.Fatal(err)
-		}
-		time.Sleep(10 * time.Millisecond)
+	defer l.Close()
+	return fmt.Sprintf("localhost:%d", l.Addr().(*net.TCPAddr).Port)
+}
+
+func (env *testEnv) question(t *testing.T) askedGate {
+	t.Helper()
+	select {
+	case a := <-env.asked:
+		return a
+	case <-time.After(5 * time.Second):
+		t.Fatal("the gate asked nothing")
+		return askedGate{}
 	}
-	return env
 }
 
 func (env *testEnv) dialProxy(t *testing.T) *tls.Conn {
@@ -140,6 +185,60 @@ func TestConnect(t *testing.T) {
 	env := newTestEnv(t)
 	if cn := env.get(t); cn != "client" {
 		t.Fatalf("upstream saw client CN %q", cn)
+	}
+}
+
+func TestGateRefusesConnect(t *testing.T) {
+	env := newGatedTestEnv(t, gate.Deny)
+	conn := env.dialProxy(t)
+	defer conn.Close()
+	upstreamHost := env.upstream.Listener.Addr().String()
+	fmt.Fprintf(conn, "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n", upstreamHost, upstreamHost)
+	res, err := http.ReadResponse(bufio.NewReader(conn), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != 403 {
+		t.Errorf("got %s", res.Status)
+	}
+	if a := env.question(t); len(a.domains) != 1 || a.domains[0] != "127.0.0.1" {
+		t.Errorf("asked about %v", a.domains)
+	}
+	if n := env.upstreamConn.Load(); n != 0 {
+		t.Errorf("dialed the upstream %d times", n)
+	}
+}
+
+func TestGateRefusesReverse(t *testing.T) {
+	env := newGatedTestEnv(t, gate.Deny)
+	conn, err := tls.Dial("tcp", env.revAddr, &tls.Config{RootCAs: env.proxyRoots, ServerName: "localhost.kmsproxy.internal"})
+	if err == nil {
+		conn.Close()
+		t.Fatal("handshake succeeded")
+	}
+	if a := env.question(t); len(a.domains) != 1 || a.domains[0] != "localhost" {
+		t.Errorf("asked about %v", a.domains)
+	}
+	if n := env.upstreamConn.Load(); n != 0 {
+		t.Errorf("dialed the upstream %d times", n)
+	}
+}
+
+// A client hanging up mid-handshake, while the gate waits for an answer, withdraws the question
+func TestGateHangUpReverse(t *testing.T) {
+	env := newGatedTestEnv(t, gate.Dismissed)
+	raw, err := net.Dial("tcp", env.revAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := tls.Client(raw, &tls.Config{RootCAs: env.proxyRoots, ServerName: "localhost.kmsproxy.internal"})
+	go client.Handshake()
+	a := env.question(t)
+	raw.Close()
+	select {
+	case <-a.ctx.Done():
+	case <-time.After(5 * time.Second):
+		t.Fatal("the question stayed up after the client hung up")
 	}
 }
 

@@ -9,15 +9,18 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"sync"
 
+	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy/gate"
 	"golang.org/x/sync/errgroup"
 )
 
 var SuccessResponse = http.Response{StatusCode: 200, Status: "Connection Established", ProtoMajor: 1, ProtoMinor: 1}
 var ErrorResponse = http.Response{StatusCode: 502, Status: "Connection Failed", ProtoMajor: 1, ProtoMinor: 1}
 var UnsupportedResponse = http.Response{StatusCode: 405, Status: "Must CONNECT", ProtoMajor: 1, ProtoMinor: 1}
+var ForbiddenResponse = http.Response{StatusCode: 403, Status: "Forbidden", ProtoMajor: 1, ProtoMinor: 1}
 
 func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) error {
 	servingCert, err := proxy.SignCertificateForListenAddr(addr)
@@ -51,7 +54,8 @@ func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) er
 		go func() {
 			defer conn.Close()
 			slog.Debug("New proxy request", "client", conn.RemoteAddr())
-			req, err := http.ReadRequest(bufio.NewReader(conn))
+			br := bufio.NewReader(conn)
+			req, err := http.ReadRequest(br)
 			if err != nil {
 				slog.Error("Error parsing HTTP request", "client", conn.RemoteAddr(), "error", err)
 				return
@@ -63,6 +67,12 @@ func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) er
 			}
 
 			remoteHost := req.Host
+			// Bytes the client sent after the request stay with it
+			conn := gate.NewPeekConn(conn, br)
+			if !proxy.allowed(ctx, conn, remoteHost) {
+				ForbiddenResponse.Write(conn)
+				return
+			}
 
 			remoteConn, err := tls.Dial("tcp", remoteHost, proxy.clientTLSConfig.Load())
 			if err != nil {
@@ -138,4 +148,16 @@ func (proxy *Proxy) ServeHTTPSProxyRequests(ctx context.Context, addr string) er
 			}
 		}()
 	}
+}
+
+// allowed asks the gate whether the caller of conn may reach the host of hostPort. Without a gate, everyone may
+func (proxy *Proxy) allowed(ctx context.Context, conn *gate.PeekConn, hostPort string) bool {
+	if proxy.gate == nil {
+		return true
+	}
+	host, _, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		host = hostPort
+	}
+	return proxy.gate.Check(ctx, conn, host)
 }

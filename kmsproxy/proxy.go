@@ -12,6 +12,7 @@ import (
 	"time"
 
 	path_poller "github.com/orbit-online/go-path-poller"
+	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy/gate"
 )
 
 type Proxy struct {
@@ -23,6 +24,7 @@ type Proxy struct {
 	clientTLSConfig           atomic.Pointer[tls.Config] // Swapped on reload, a tls.Config in use must not be modified
 	pacFile                   *string
 	pathNotifier              *path_poller.PathNotifier
+	gate                      *gate.Gate // nil when disabled
 }
 
 func NewProxy(
@@ -35,6 +37,7 @@ func NewProxy(
 	insecureSkipVerify bool,
 	pacFile *string,
 	pathNotifier *path_poller.PathNotifier,
+	callerGate *gate.Gate,
 ) (*Proxy, error) {
 	var err error
 	ca, err := loadKeyCert(ctx, caKeyPath, caCertPath)
@@ -70,6 +73,7 @@ func NewProxy(
 		clientCertMap:       clientCertMap,
 		pacFile:             pacFile,
 		pathNotifier:        pathNotifier,
+		gate:                callerGate,
 	}
 	proxy.clientTLSConfig.Store(&tls.Config{
 		Renegotiation:      tls.RenegotiateFreelyAsClient,

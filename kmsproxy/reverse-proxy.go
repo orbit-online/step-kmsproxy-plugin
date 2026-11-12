@@ -13,6 +13,8 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy/gate"
 )
 
 func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, stripSuffixes []string, portMap map[string]int64) error {
@@ -44,7 +46,8 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 				remoteHost string
 				remoteAddr string
 			)
-			clientConn := tls.Server(conn, &tls.Config{
+			peekConn := gate.NewPeekConn(conn, nil)
+			clientConn := tls.Server(peekConn, &tls.Config{
 				GetConfigForClient: func(hello *tls.ClientHelloInfo) (*tls.Config, error) {
 					remoteHost = hello.ServerName
 					var found bool
@@ -52,6 +55,9 @@ func (proxy *Proxy) ServeReverseProxyRequests(ctx context.Context, addr string, 
 						if remoteHost, found = strings.CutSuffix(remoteHost, suffix); found {
 							break
 						}
+					}
+					if !proxy.allowed(ctx, peekConn, remoteHost) {
+						return nil, fmt.Errorf("The caller may not reach %s", remoteHost)
 					}
 					if port, ok := portMap[hello.ServerName]; ok {
 						remoteAddr = fmt.Sprintf("%s:%d", remoteHost, port)

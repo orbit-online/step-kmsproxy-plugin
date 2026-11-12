@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 	"github.com/alecthomas/kong"
 	path_poller "github.com/orbit-online/go-path-poller"
 	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy"
+	"github.com/orbit-online/step-kmsproxy-plugin/kmsproxy/gate"
 	"golang.org/x/sync/errgroup"
 
 	// KMS modules (https://github.com/smallstep/step-kms-plugin/blob/3be48fd238cdc1d40dfad5e6410cf852544c3b4f/main.go#L19-L29)
@@ -42,6 +44,7 @@ type Params struct {
 	RevSuffixes        []string `name:"rev-suffix" help:"Suffixes to strip from reverse proxied domains" type:"string" default:".kmsproxy.internal"`
 	RevPortMap         []string `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
 	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
+	NoGate             bool     `name:"no-gate" help:"Don't ask the user before a local caller uses the client certificates for a domain"`
 	Verbose            bool     `help:"Turn on verbose logging"`
 }
 
@@ -75,7 +78,18 @@ func startProxy(parentCtx context.Context, params Params) error {
 		return err
 	}
 
-	proxy, err := kmsproxy.NewProxy(ctx, params.CAKeyPath, params.CACertPath, params.TrustBundlePaths, params.ClientKeyPaths, params.ClientCertPaths, params.InsecureSkipVerify, params.PACPath, pathNotifier)
+	var callerGate *gate.Gate
+	if !params.NoGate {
+		configDir, err := os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+		if callerGate, err = gate.New(filepath.Join(configDir, "kmsproxy", "allowed.json"), gate.IdentifyCaller, gate.AskUser); err != nil {
+			return err
+		}
+	}
+
+	proxy, err := kmsproxy.NewProxy(ctx, params.CAKeyPath, params.CACertPath, params.TrustBundlePaths, params.ClientKeyPaths, params.ClientCertPaths, params.InsecureSkipVerify, params.PACPath, pathNotifier, callerGate)
 	if err != nil {
 		return err
 	}
