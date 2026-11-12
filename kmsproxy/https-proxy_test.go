@@ -81,7 +81,9 @@ func newGatedTestEnv(t *testing.T, answer gate.Answer) *testEnv {
 		t.Fatal(err)
 	}
 	// Identification is tested in the gate package, and needs a cgroupfs the Nix build sandbox doesn't have
-	identify := func(local, remote string) (gate.Caller, error) { return gate.Caller{ID: "test", Description: "test"}, nil }
+	identify := func(local, remote string) (gate.Caller, error) {
+		return gate.Caller{ID: "test", Description: "test"}, nil
+	}
 	callerGate, err := gate.New(filepath.Join(dir, "allowed.json"), identify,
 		func(ctx context.Context, caller gate.Caller, domains []string) (gate.Answer, error) {
 			env.asked <- askedGate{ctx, domains}

@@ -92,8 +92,26 @@ func (h *harness) check(caller, domain string) *request {
 	h.callers[server.RemoteAddr().String()] = caller
 	h.mu.Unlock()
 	r := &request{done: make(chan bool, 1), client: client}
+	before := h.waiting(caller)
 	go func() { r.done <- h.gate.Check(context.Background(), NewPeekConn(server, nil), domain) }()
+	// Return once the gate settled the request or has it waiting, as the model's arrive does
+	for deadline := time.Now().Add(5 * time.Second); len(r.done) == 0 && h.waiting(caller) == before; {
+		if time.Now().After(deadline) {
+			h.t.Fatalf("%s for %s neither settled nor waits", caller, domain)
+		}
+		time.Sleep(time.Millisecond)
+	}
 	return r
+}
+
+// waiting counts the requests of caller waiting in the gate
+func (h *harness) waiting(caller string) int {
+	h.gate.mu.Lock()
+	defer h.gate.mu.Unlock()
+	if cs := h.gate.callers[caller]; cs != nil {
+		return len(cs.waiting)
+	}
+	return 0
 }
 
 func (h *harness) prompt() *asked {
