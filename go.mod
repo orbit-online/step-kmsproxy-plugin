@@ -4,7 +4,9 @@ go 1.26.8
 
 require (
 	github.com/alecthomas/kong v1.16.1
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260427185012-515ba073c4c1
 	github.com/godbus/dbus/v5 v5.2.4
+	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de
 	github.com/orbit-online/go-path-poller v0.0.0-20260817123752-12f7a9fe9a68
 	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/smallstep/cli-utils v0.12.2
@@ -63,7 +65,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/certificate-transparency-go v1.3.3 // indirect
-	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/google/go-tpm-tools v0.4.9 // indirect
 	github.com/google/go-tspi v0.3.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect

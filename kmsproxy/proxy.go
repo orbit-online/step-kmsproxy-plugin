@@ -25,6 +25,7 @@ type Proxy struct {
 	pacFile                   *string
 	pathNotifier              *path_poller.PathNotifier
 	gate                      *gate.Gate // nil when disabled
+	tpmKeys                   tpmKeys
 }
 
 func NewProxy(
@@ -40,7 +41,7 @@ func NewProxy(
 	callerGate *gate.Gate,
 ) (*Proxy, error) {
 	var err error
-	ca, err := loadKeyCert(ctx, caKeyPath, caCertPath)
+	ca, err := loadKeyCert(ctx, &tpmKeys{}, caKeyPath, caCertPath)
 	if err != nil {
 		return nil, err
 	}
@@ -91,3 +92,6 @@ func NewProxy(
 	proxy.warnExpired()
 	return &proxy, nil
 }
+
+// ForgetTPMKeys makes the next load ask for the PINs of the TPM keys again
+func (proxy *Proxy) ForgetTPMKeys() { proxy.tpmKeys.reset() }
