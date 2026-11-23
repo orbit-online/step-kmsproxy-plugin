@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	stepCLI "github.com/smallstep/cli-utils/step"
@@ -189,6 +190,8 @@ func loadKey(ctx context.Context, tpmKeys *tpmKeys, keyPath string) (crypto.Sign
 			return nil, fmt.Errorf("%s does not contain a private key", keyPath)
 		}
 		return key, nil
+	} else if strings.HasPrefix(keyPath, agentKeyScheme) {
+		return loadAgentKey(keyPath)
 	} else {
 		km, err := openKMS(ctx, keyPath)
 		if err != nil {
