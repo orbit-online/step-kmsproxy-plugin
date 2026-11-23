@@ -44,6 +44,11 @@ workstations).
 
 ## Usage
 
+On Linux, `--clientkey` also takes a TPM key file as `ssh-tpm-keygen` writes
+it. It is loaded once and held, and its PIN is asked for with `$SSH_ASKPASS`.
+After Cancel, or when the key needs a new PIN, `systemctl --user reload
+kmsproxy` (SIGHUP) asks again.
+
 ### Kubernetes
 
 You can use KMS proxy for authenticating with Kubernetes:

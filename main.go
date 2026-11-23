@@ -88,6 +88,7 @@ func startProxy(parentCtx context.Context, params Params) error {
 			case <-ctx.Done():
 				return ctx.Err()
 			case <-reloadSig:
+				proxy.ForgetTPMKeys()
 				proxy.LoadClientKeyCerts(ctx, "SIGHUP reload signal was sent")
 			}
 		}

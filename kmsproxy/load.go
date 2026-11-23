@@ -35,7 +35,7 @@ func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
 	proxy.warnExpired()
 
 	for keyPath, _ := range proxy.clientKeyMap {
-		key, err := loadKey(ctx, keyPath)
+		key, err := loadKey(ctx, &proxy.tpmKeys, keyPath)
 		if err != nil {
 			errorsEncountered = true
 			slog.Error("Failed to load certificate", "path", keyPath, "err", err)
@@ -108,8 +108,8 @@ func (proxy *Proxy) getEarliestClientCertExpiry() (earliest time.Time) {
 	return earliest
 }
 
-func loadKeyCert(ctx context.Context, keyPath string, certPath string) (*tls.Certificate, error) {
-	key, err := loadKey(ctx, keyPath)
+func loadKeyCert(ctx context.Context, tpmKeys *tpmKeys, keyPath string, certPath string) (*tls.Certificate, error) {
+	key, err := loadKey(ctx, tpmKeys, keyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -169,12 +169,16 @@ func matchKeysAndCerts(keys map[string]crypto.Signer, certs map[string][]x509.Ce
 	return keyCerts, unmatchedKeys, unmatchedCerts
 }
 
-func loadKey(ctx context.Context, keyPath string) (crypto.Signer, error) {
+func loadKey(ctx context.Context, tpmKeys *tpmKeys, keyPath string) (crypto.Signer, error) {
 	slog.Debug("Loading key", "keyPath", keyPath)
 	if _, err := os.Stat(keyPath); err == nil {
 		rawKey, err := os.ReadFile(keyPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read private key at %s: %w", keyPath, err)
+		}
+		// A TPM key file, as ssh-tpm-keygen writes it
+		if block, _ := pem.Decode(rawKey); block != nil && block.Type == "TSS2 PRIVATE KEY" {
+			return tpmKeys.load(keyPath, rawKey)
 		}
 		maybeKey, err := stepPEM.Parse(rawKey)
 		if err != nil {
