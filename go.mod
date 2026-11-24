@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/kong v1.16.1
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260427185012-515ba073c4c1
 	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de
-	github.com/orbit-online/go-path-poller v0.0.0-20260817123752-12f7a9fe9a68
+	github.com/orbit-online/go-path-poller v0.0.0-20261124113506-9a0d24a83701
 	github.com/smallstep/cli-utils v0.12.2
 	go.step.sm/crypto v0.89.0
 	golang.org/x/crypto v0.55.0
