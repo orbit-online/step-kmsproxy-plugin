@@ -44,6 +44,22 @@ workstations).
 
 ## Usage
 
+`--config FILE` reads flag values from a JSON object keyed by flag name, with
+dashes as underscores; lists are arrays, and flags on the command line win.
+A config file can't set arguments, so `<cakey> <cacert>` go in it as `cakey`
+and `cacert` (the flags `--cakey` and `--cacert`):
+
+```json
+{
+  "cakey": "/home/me/.config/kmsproxy/ca.key",
+  "cacert": "/home/me/.config/kmsproxy/ca.crt",
+  "clientkey": ["tpmkms:name=mykey"],
+  "clientcert": ["/home/me/.step/certs/my.crt"],
+  "pac": "/home/me/.config/kmsproxy/ProxyAutoConfiguration.js",
+  "pac_listen": "localhost:8091"
+}
+```
+
 On Linux, `--clientkey` also takes a TPM key file as `ssh-tpm-keygen` writes
 it. It is loaded once and held, and its PIN is asked for with `$SSH_ASKPASS`.
 After Cancel, or when the key needs a new PIN, `systemctl --user reload

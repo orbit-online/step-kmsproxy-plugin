@@ -30,30 +30,65 @@ import (
 )
 
 type Params struct {
-	CAKeyPath          string   `required:"" arg:"" name:"cakey" help:"Filesystem path or Smallstep KMS key URI used for creating certificates trusted by proxy clients"`
-	CACertPath         string   `required:"" arg:"" name:"cacert" help:"Path to CA certificate matching the key at <cakey>"`
-	ClientKeyPaths     []string `required:"" name:"clientkey" help:"Filesystem paths or Smallstep KMS key URIs to use for mTLS connections"`
-	ClientCertPaths    []string `required:"" name:"clientcert" help:"Path to client certificates matching the keys from --clientkey"`
-	TrustBundlePaths   []string `name:"trust" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
-	ListenAddr         string   `name:"listen" help:"Listening address, empty string to disable" type:"string" default:"localhost:8090"`
-	PACListenAddr      string   `name:"pac-listen" help:"Listening address for serving AutoProxyConfiguration.js" default:"localhost:8091"`
-	PACPath            *string  `name:"pac" help:"Path to AutoProxyConfiguration.js" type:"path"`
-	RevListenAddr      string   `name:"rev-listen" help:"Reverse proxy listening address, empty string to disable" type:"string" default:"localhost:8092"`
-	RevSuffixes        []string `name:"rev-suffix" help:"Suffixes to strip from reverse proxied domains" type:"string" default:".kmsproxy.internal"`
-	RevPortMap         []string `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
-	InsecureSkipVerify bool     `help:"Disable validation of server certificates"`
-	Verbose            bool     `help:"Turn on verbose logging"`
+	Config             kong.ConfigFlag `name:"config" help:"JSON file of flag values by flag name, dashes as underscores, e.g. {\"clientkey\": [\"...\"], \"pac_listen\": \"localhost:8091\"}; the command line wins" type:"path"`
+	CAKeyArg           string          `arg:"" optional:"" name:"cakey" help:"Filesystem path or Smallstep KMS key URI used for creating certificates trusted by proxy clients (or --cakey)"`
+	CACertArg          string          `arg:"" optional:"" name:"cacert" help:"Path to CA certificate matching the key at <cakey> (or --cacert)"`
+	CAKeyPath          string          `name:"cakey" help:"<cakey> as a flag, which --config can set"`
+	CACertPath         string          `name:"cacert" help:"<cacert> as a flag, which --config can set"`
+	ClientKeyPaths     []string        `required:"" name:"clientkey" help:"Filesystem paths or Smallstep KMS key URIs to use for mTLS connections"`
+	ClientCertPaths    []string        `required:"" name:"clientcert" help:"Path to client certificates matching the keys from --clientkey"`
+	TrustBundlePaths   []string        `name:"trust" help:"CA bundle to trust beyond the system trust store, can be specified multiple times." type:"path"`
+	ListenAddr         string          `name:"listen" help:"Listening address, empty string to disable" type:"string" default:"localhost:8090"`
+	PACListenAddr      string          `name:"pac-listen" help:"Listening address for serving AutoProxyConfiguration.js" default:"localhost:8091"`
+	PACPath            *string         `name:"pac" help:"Path to AutoProxyConfiguration.js" type:"path"`
+	RevListenAddr      string          `name:"rev-listen" help:"Reverse proxy listening address, empty string to disable" type:"string" default:"localhost:8092"`
+	RevSuffixes        []string        `name:"rev-suffix" help:"Suffixes to strip from reverse proxied domains" type:"string" default:".kmsproxy.internal"`
+	RevPortMap         []string        `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
+	InsecureSkipVerify bool            `help:"Disable validation of server certificates"`
+	Verbose            bool            `help:"Turn on verbose logging"`
+}
+
+// Validate takes the CA key and certificate from the arguments or from the
+// flags, not both. A config file sets only flags: kong resolves flags from
+// it, never arguments.
+func (p *Params) Validate() error {
+	if p.CAKeyArg != "" || p.CACertArg != "" {
+		if p.CAKeyPath != "" || p.CACertPath != "" {
+			return errors.New("the CA key and certificate are either <cakey> <cacert> or --cakey and --cacert, not both")
+		}
+		if p.CACertArg == "" {
+			return errors.New("<cacert> is missing")
+		}
+		p.CAKeyPath, p.CACertPath = p.CAKeyArg, p.CACertArg
+	}
+	if p.CAKeyPath == "" || p.CACertPath == "" {
+		return errors.New("the CA key and certificate are missing: <cakey> <cacert>, or --cakey and --cacert")
+	}
+	return nil
+}
+
+func newParser(params *Params, options ...kong.Option) (*kong.Kong, error) {
+	return kong.New(params, append([]kong.Option{
+		kong.Name("step-kmsproxy-plugin"),
+		kong.Description("Use smallstep to create mTLS tunnels"),
+		kong.Configuration(kong.JSON),
+	}, options...)...)
 }
 
 var params Params
 
 func main() {
-	kong.Parse(&params, kong.Name("step-kmsproxy-plugin"), kong.Description("Use smallstep to create mTLS tunnels"))
+	parser, err := newParser(&params)
+	if err != nil {
+		panic(err)
+	}
+	_, err = parser.Parse(os.Args[1:])
+	parser.FatalIfErrorf(err)
 	slog.SetDefault(slog.Default())
 	if params.Verbose {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
-	err := startProxy(context.Background(), params)
+	err = startProxy(context.Background(), params)
 	ret := 0
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
