@@ -374,15 +374,18 @@ const (
 	creduiKeepUsername       = 0x100000
 )
 
-// dialogPIN asks for the PIN of the key name in a Windows credential dialog:
-// no console needed, nothing saved in the credential manager.
+// dialogPIN asks for the PIN of the key name in a Windows credential dialog
+// (see promptOwner for when it comes to the front): no console needed,
+// nothing saved in the credential manager.
 func dialogPIN(name, note string) (string, error) {
 	msg := "The PIN of the TPM key " + name + ", for kmsproxy to sign the TLS connections it proxies."
 	if note != "" {
 		// The dialog drops line breaks.
 		msg = note + " " + msg
 	}
-	info := creduiInfo{pszMessageText: u16(msg), pszCaptionText: u16("kmsproxy")}
+	owner, done := promptOwner("kmsproxy")
+	defer done()
+	info := creduiInfo{hwndParent: owner, pszMessageText: u16(msg), pszCaptionText: u16("kmsproxy")}
 	info.cbSize = uint32(unsafe.Sizeof(info))
 	user := make([]uint16, 514)
 	copy(user, windows.StringToUTF16(name))
