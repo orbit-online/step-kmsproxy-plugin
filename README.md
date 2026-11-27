@@ -65,6 +65,12 @@ it. It is loaded once and held, and its PIN is asked for with `$SSH_ASKPASS`.
 After Cancel, or when the key needs a new PIN, `systemctl --user reload
 kmsproxy` (SIGHUP) asks again.
 
+`sshagentkms:COMMENT` in `--clientkey` or `--cakey` is a key of the ssh-agent at
+`$SSH_AUTH_SOCK` (ECDSA P-256 or Ed25519), by its comment, or by its
+fingerprint as `ssh-keygen -l` prints it: `sshagentkms:SHA256:<base64>`. A
+fingerprint survives a changed comment; Secretive's comments carry the
+computer name.
+
 On Windows, `pcp:key=NAME` in `--clientkey` or `--cakey` is an ECDSA key of
 the Microsoft Platform Crypto Provider (the TPM) of the current user. It is
 opened once and held. If it has a PIN, kmsproxy asks for it in a Windows

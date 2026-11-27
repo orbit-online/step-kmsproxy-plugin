@@ -19,7 +19,9 @@ import (
 )
 
 // Keys of the ssh-agent at $SSH_AUTH_SOCK, by comment: sshagentkms:<comment>,
-// as go.step.sm/crypto/kms/sshagentkms names them. Its signer can't
+// as go.step.sm/crypto/kms/sshagentkms names them, or by fingerprint as
+// ssh-keygen -l prints it: sshagentkms:SHA256:<base64>. A fingerprint stays
+// when a comment changes (Secretive's carry the computer name). Its signer can't
 // authenticate a TLS client with an ECDSA key: its public key is an
 // ssh.PublicKey, which matches no certificate, and it has the agent sign the
 // digest TLS hands it, which the agent hashes again. This signer has the
@@ -50,7 +52,7 @@ func dialAgent(socket string) (agent.ExtendedAgent, func(), error) {
 }
 
 func loadAgentKey(uri string) (crypto.Signer, error) {
-	comment := strings.TrimPrefix(uri, agentKeyScheme)
+	name := strings.TrimPrefix(uri, agentKeyScheme)
 	socket := os.Getenv("SSH_AUTH_SOCK")
 	if socket == "" {
 		return nil, fmt.Errorf("%s: SSH_AUTH_SOCK is not set", uri)
@@ -64,13 +66,17 @@ func loadAgentKey(uri string) (crypto.Signer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ssh-agent at %s: %w", socket, err)
 	}
+	var held []string
 	for _, k := range keys {
-		if k.Comment != comment {
-			continue
-		}
 		pk, err := ssh.ParsePublicKey(k.Blob)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", uri, err)
+			held = append(held, fmt.Sprintf("%q (unparsable: %v)", k.Comment, err))
+			continue
+		}
+		fp := ssh.FingerprintSHA256(pk)
+		if k.Comment != name && fp != name {
+			held = append(held, fmt.Sprintf("%s %q", fp, k.Comment))
+			continue
 		}
 		cpk, ok := pk.(ssh.CryptoPublicKey)
 		if !ok {
@@ -92,7 +98,10 @@ func loadAgentKey(uri string) (crypto.Signer, error) {
 		}
 		return key, nil
 	}
-	return nil, fmt.Errorf("%s: the ssh-agent at %s holds no key with that comment", uri, socket)
+	if len(held) == 0 {
+		return nil, fmt.Errorf("%s: the ssh-agent at %s holds no keys", uri, socket)
+	}
+	return nil, fmt.Errorf("%s: the ssh-agent at %s holds no key with that comment or fingerprint, only %s", uri, socket, strings.Join(held, ", "))
 }
 
 func (k *agentKey) Public() crypto.PublicKey { return k.pub }

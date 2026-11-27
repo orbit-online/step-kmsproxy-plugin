@@ -16,10 +16,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	stepKey "go.step.sm/crypto/keyutil"
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )
 
@@ -132,12 +134,25 @@ func TestAgentKeyErrors(t *testing.T) {
 	}
 	p256, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	serveAgent(t, map[string]crypto.PrivateKey{"there": p256})
-	if _, err := loadKey(context.Background(), &tpmKeys{}, "sshagentkms:missing"); err == nil {
-		t.Fatal("no error for a comment the agent doesn't hold")
+	// A missing key: the error lists the keys the agent holds.
+	if _, err := loadKey(context.Background(), &tpmKeys{}, "sshagentkms:missing"); err == nil || !strings.Contains(err.Error(), `"there"`) {
+		t.Fatalf("want an error that lists the agent's keys, got %v", err)
 	}
 	s, err := loadKey(context.Background(), &tpmKeys{}, "sshagentkms:there")
 	if err != nil {
 		t.Fatal(err)
+	}
+	// By fingerprint, as ssh-keygen -l prints it.
+	sp, _ := ssh.NewPublicKey(&p256.PublicKey)
+	fp, err := loadKey(context.Background(), &tpmKeys{}, "sshagentkms:"+ssh.FingerprintSHA256(sp))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !stepKey.Equal(fp.Public(), &p256.PublicKey) {
+		t.Fatal("the key by fingerprint is another key")
+	}
+	if _, err := loadKey(context.Background(), &tpmKeys{}, "sshagentkms:SHA256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); err == nil {
+		t.Fatal("no error for a fingerprint the agent doesn't hold")
 	}
 	if _, err := s.Sign(rand.Reader, make([]byte, 32), crypto.SHA256); err == nil {
 		t.Fatal("an ECDSA agent key signed a digest")
