@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -46,6 +48,7 @@ type Params struct {
 	RevPortMap         []string        `name:"rev-portmap" help:"DOMAIN=PORT mappings that should connect to a port other than 443 (e.g. --rev-portmap example.com.kmsproxy.internal=3000)" type:"string"`
 	InsecureSkipVerify bool            `help:"Disable validation of server certificates"`
 	Verbose            bool            `help:"Turn on verbose logging"`
+	LogFile            string          `name:"log-file" help:"Append the log to this file instead of stderr; at start, a file past 1 MiB moves to <file>.old" type:"path"`
 }
 
 // Validate takes the CA key and certificate from the arguments or from the
@@ -84,6 +87,12 @@ func main() {
 	}
 	_, err = parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
+	if params.LogFile != "" {
+		f, err := openLog(params.LogFile)
+		parser.FatalIfErrorf(err)
+		defer f.Close()
+		log.SetOutput(f)
+	}
 	slog.SetDefault(slog.Default())
 	if params.Verbose {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
@@ -97,6 +106,20 @@ func main() {
 		}
 	}
 	os.Exit(ret)
+}
+
+// openLog opens path to append to, moving it to path.old first when it is
+// past 1 MiB.
+func openLog(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return nil, err
+	}
+	if fi, err := os.Stat(path); err == nil && fi.Size() > 1<<20 {
+		if err := os.Rename(path, path+".old"); err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 }
 
 func startProxy(parentCtx context.Context, params Params) error {

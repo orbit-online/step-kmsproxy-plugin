@@ -72,6 +72,10 @@ credential dialog: a wrong PIN asks again at once (each one counts towards
 the TPM lockout), Cancel asks again an hour later, and a key that fails to
 sign, after a resume say, is opened again and asks again.
 
+`--log-file FILE` appends the log to FILE instead of stderr, which the
+Windows GUI build (`-H windowsgui`) doesn't have. At start, a file past
+1 MiB moves to `FILE.old`.
+
 ### Kubernetes
 
 You can use KMS proxy for authenticating with Kubernetes:
