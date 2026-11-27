@@ -53,6 +53,10 @@ func (k *tpmKeys) load(path string, data []byte) (crypto.Signer, error) {
 	return key.signer, key.err
 }
 
+func (*tpmKeys) loadPCP(keyURI string) (crypto.Signer, error) {
+	return nil, fmt.Errorf("%s: keys of the Platform Crypto Provider are supported on Windows only", keyURI)
+}
+
 // reset forgets the keys, so the next load asks for their PINs again.
 func (k *tpmKeys) reset() {
 	k.mu.Lock()

@@ -24,6 +24,10 @@ import (
 
 const RELOAD_RETRY_INTERVAL = time.Second * 60
 
+// pcpKeyScheme names a key of the Microsoft Platform Crypto Provider (the
+// TPM) of this user on Windows: pcp:key=NAME.
+const pcpKeyScheme = "pcp:"
+
 func (proxy *Proxy) LoadClientKeyCerts(ctx context.Context, reason string) {
 	proxy.clientCertKeysMutex.Lock()
 	defer proxy.clientCertKeysMutex.Unlock()
@@ -192,6 +196,8 @@ func loadKey(ctx context.Context, tpmKeys *tpmKeys, keyPath string) (crypto.Sign
 		return key, nil
 	} else if strings.HasPrefix(keyPath, agentKeyScheme) {
 		return loadAgentKey(keyPath)
+	} else if strings.HasPrefix(keyPath, pcpKeyScheme) {
+		return tpmKeys.loadPCP(keyPath)
 	} else {
 		km, err := openKMS(ctx, keyPath)
 		if err != nil {

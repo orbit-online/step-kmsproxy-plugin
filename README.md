@@ -65,6 +65,13 @@ it. It is loaded once and held, and its PIN is asked for with `$SSH_ASKPASS`.
 After Cancel, or when the key needs a new PIN, `systemctl --user reload
 kmsproxy` (SIGHUP) asks again.
 
+On Windows, `pcp:key=NAME` in `--clientkey` or `--cakey` is an ECDSA key of
+the Microsoft Platform Crypto Provider (the TPM) of the current user. It is
+opened once and held. If it has a PIN, kmsproxy asks for it in a Windows
+credential dialog: a wrong PIN asks again at once (each one counts towards
+the TPM lockout), Cancel asks again an hour later, and a key that fails to
+sign, after a resume say, is opened again and asks again.
+
 ### Kubernetes
 
 You can use KMS proxy for authenticating with Kubernetes:
